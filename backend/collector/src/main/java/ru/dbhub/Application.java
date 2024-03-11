@@ -1,4 +1,4 @@
-package ru.dbhub.collector;
+package ru.dbhub;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

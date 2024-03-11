@@ -1,4 +1,4 @@
-package ru.dbhub.collector;
+package ru.dbhub;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

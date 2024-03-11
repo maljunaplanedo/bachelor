@@ -1,4 +1,4 @@
-package ru.dbhub.collector;
+package ru.dbhub;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

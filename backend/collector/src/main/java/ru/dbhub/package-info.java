@@ -1,4 +1,4 @@
 @NonNullApi
-package ru.dbhub.collector;
+package ru.dbhub;
 
 import org.springframework.lang.NonNullApi;
