@@ -13,7 +13,7 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
-public final class HTMLNewsSource implements NewsSource {
+final class HTMLNewsSource implements NewsSource {
     public record Config(
         String urlWithPageVar,
         String itemSelector,

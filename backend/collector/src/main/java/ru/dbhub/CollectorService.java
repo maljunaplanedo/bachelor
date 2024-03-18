@@ -20,7 +20,7 @@ public class CollectorService {
     private final ObjectMapper jsonMapper = new ObjectMapper();
 
     @Autowired
-    private ConfigsStorage configsStorage;
+    private Storage<ConfigsAccessor> configsStorage;
 
     private <C> C parseConfig(String configString, Class<C> configClass) throws BadConfigFormatException {
         try {
@@ -34,7 +34,7 @@ public class CollectorService {
         return new Collector(parseConfig(config, Collector.Config.class));
     }
 
-    private NewsSource createNewsSource(NewsSource.TypeAndConfig typeAndConfig) throws BadConfigException {
+    private NewsSource createNewsSource(NewsSourceTypeAndConfig typeAndConfig) throws BadConfigException {
         Class<?> sourceClass;
         try {
             var packageName = getClass().getPackageName();
@@ -66,37 +66,47 @@ public class CollectorService {
     }
 
     public String getCollectorConfig() {
-        return configsStorage.getCollectorConfig();
+        var configsStorageTransaction = configsStorage.getTransaction();
+        var result = configsStorageTransaction.get().getCollectorConfig();
+        configsStorageTransaction.commit();
+        return result;
     }
 
-    public Map<String, NewsSource.TypeAndConfig> getNewsSourceConfigs() {
-        return configsStorage.getNewsSourceConfigs();
+    public Map<String, NewsSourceTypeAndConfig> getNewsSourceConfigs() {
+        var configsStorageTransaction = configsStorage.getTransaction();
+        var result = configsStorageTransaction.get().getNewsSourceConfigs();
+        configsStorageTransaction.commit();
+        return result;
     }
 
     public void validateAndSetCollectorConfig(String config) throws BadConfigFormatException {
         createCollector(config);
-        configsStorage.setCollectorConfig(config);
+        var configsStorageTransaction = configsStorage.getTransaction();
+        configsStorageTransaction.get().setCollectorConfig(config);
+        configsStorageTransaction.commit();
     }
 
     public void validateAndSetNewsSourceConfig(
-        String source, NewsSource.TypeAndConfig typeAndConfig
+        String source, NewsSourceTypeAndConfig typeAndConfig
     ) throws BadConfigException {
         createNewsSource(typeAndConfig);
-        configsStorage.setNewsSourceConfig(source, typeAndConfig);
+        var configsStorageTransaction = configsStorage.getTransaction();
+        configsStorageTransaction.get().setNewsSourceConfig(source, typeAndConfig);
+        configsStorageTransaction.commit();
     }
 
-    private Collector createCollectorForCollect() {
+    private Collector createCollectorForCollect(ConfigsAccessor configsAccessor) {
         try {
-            return createCollector(getCollectorConfig());
+            return createCollector(configsAccessor.getCollectorConfig());
         } catch (BadConfigFormatException exception) {
             throw new RuntimeException(exception);
         }
     }
 
-    private Map<String, NewsSource> createNewsSourcesForCollect() {
+    private Map<String, NewsSource> createNewsSourcesForCollect(ConfigsAccessor configsAccessor) {
         Map<String, NewsSource> newsSources = new HashMap<>();
 
-        getNewsSourceConfigs().forEach((name, typeAndConfig) -> {
+        configsAccessor.getNewsSourceConfigs().forEach((name, typeAndConfig) -> {
             try {
                 newsSources.put(name, createNewsSource(typeAndConfig));
             } catch (BadConfigException exception) {
@@ -118,7 +128,7 @@ public class CollectorService {
         try {
             validateAndSetNewsSourceConfig(
                 "habr.com",
-                new NewsSource.TypeAndConfig(
+                new NewsSourceTypeAndConfig(
                     "HTML",
                     "{" +
                         "\"urlWithPageVar\":\"https://habr.com/ru/articles/page{page}\"," +
@@ -134,9 +144,11 @@ public class CollectorService {
             throw new RuntimeException(e);
         }
 
-        var collector = createCollectorForCollect();
+        var configsStorageTransaction = configsStorage.getTransaction();
 
-        createNewsSourcesForCollect().forEach((name, source) -> {
+        var collector = createCollectorForCollect(configsStorageTransaction.get());
+
+        createNewsSourcesForCollect(configsStorageTransaction.get()).forEach((name, source) -> {
             try {
                 logger.debug(collector.getArticlesFromSourceSince(source, 0).toString());
             } catch (IOException exception) {

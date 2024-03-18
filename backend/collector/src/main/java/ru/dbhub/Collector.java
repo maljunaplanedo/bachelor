@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 
-public class Collector {
+class Collector {
     public record Config(
         long maxArticles,
         Set<String> keywords
