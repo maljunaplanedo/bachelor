@@ -1,30 +1,53 @@
 package ru.dbhub;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Function;
 
-@Component
 public class Collector {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    public record Config(
+        long maxArticles,
+        Set<String> keywords
+    ) {
+    };
 
-    private final WebClient webClient;
+    private final Config config;
 
-    Collector(WebClient webClient) {
-        this.webClient = webClient;
+    Collector(Config config) {
+        this.config = config;
     }
 
-    @Scheduled(fixedRateString = "${ru.dbhub.collector.collect-rate}")
-    public void collect() {
-        logger.debug(
-            webClient
-                .get()
-                .uri("https://habr.com/ru/rss/articles/?fl=ru")
-                .retrieve()
-                .bodyToMono(String.class)
-                .block()
-        );
+    private boolean textContainsKeyword(String text) {
+        return Arrays.stream(text.split("\\s+")).anyMatch(config.keywords()::contains);
+    }
+
+    private boolean shouldCollect(JustCollectedArticle article) {
+        return true;
+        // return textContainsKeyword(article.title()) || textContainsKeyword(article.text());
+    }
+
+    public List<JustCollectedArticle> getArticlesFromSourceSince(
+        NewsSource newsSource, int boundTimestamp
+    ) throws IOException {
+        List<JustCollectedArticle> articles = new ArrayList<>();
+
+        for (int pageNo = 1;; ++pageNo) {
+            var articlesPage = newsSource.getArticlesPage(pageNo);
+
+            articlesPage.stream()
+                .filter(this::shouldCollect)
+                .limit(config.maxArticles() - articles.size())
+                .takeWhile(article -> article.timestamp() >= boundTimestamp)
+                .forEach(articles::add);
+
+            if (articles.size() == config.maxArticles() ||
+                articlesPage.isEmpty() ||
+                articlesPage.getLast().timestamp() < boundTimestamp
+            ) {
+                break;
+            }
+        }
+
+        return articles;
     }
 }
