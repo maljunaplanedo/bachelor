@@ -42,10 +42,10 @@ class Collector {
                 .limit(config.maxArticles() - articles.size())
                 .forEach(articles::add);
 
-            if (articles.size() == config.maxArticles() ||
+            boolean shouldBreak = articles.size() == config.maxArticles() ||
                 articlesPage.isEmpty() ||
-                articlesPage.getLast().timestamp() < oldLastTimestamp
-            ) {
+                articlesPage.getLast().timestamp() < oldLastTimestamp;
+            if (shouldBreak) {
                 break;
             }
         }
