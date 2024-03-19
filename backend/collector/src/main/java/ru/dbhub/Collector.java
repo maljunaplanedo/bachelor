@@ -1,19 +1,14 @@
 package ru.dbhub;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 
-public class Collector {
-    public record Config(
-        long maxArticles,
-        Set<String> keywords
-    ) {
-    };
+class Collector {
+    private final CollectorConfig config;
 
-    private final Config config;
-
-    Collector(Config config) {
+    Collector(CollectorConfig config) {
         this.config = config;
     }
 
@@ -21,33 +16,41 @@ public class Collector {
         return Arrays.stream(text.split("\\s+")).anyMatch(config.keywords()::contains);
     }
 
-    private boolean shouldCollect(JustCollectedArticle article) {
+    private boolean shouldCollectByTopic(JustCollectedArticle article) {
         return true;
         // return textContainsKeyword(article.title()) || textContainsKeyword(article.text());
     }
 
-    public List<JustCollectedArticle> getArticlesFromSourceSince(
-        NewsSource newsSource, int boundTimestamp
+    @Transactional
+    void collect(
+        String sourceName, NewsSource source, ArticleStorage storage
     ) throws IOException {
         List<JustCollectedArticle> articles = new ArrayList<>();
+        long oldLastTimestamp = storage.getLastTimestampOfSource(sourceName);
+        long newLastTimestamp = 0;
 
         for (int pageNo = 1;; ++pageNo) {
-            var articlesPage = newsSource.getArticlesPage(pageNo);
+            var articlesPage = source.getArticlesPage(pageNo);
+            if (newLastTimestamp == 0 && !articlesPage.isEmpty()) {
+                newLastTimestamp = articlesPage.getFirst().timestamp();
+            }
 
             articlesPage.stream()
-                .filter(this::shouldCollect)
+                .takeWhile(article -> article.timestamp() >= oldLastTimestamp)
+                .filter(this::shouldCollectByTopic)
+                .filter(article -> !storage.has(sourceName, article.link()))
                 .limit(config.maxArticles() - articles.size())
-                .takeWhile(article -> article.timestamp() >= boundTimestamp)
                 .forEach(articles::add);
 
             if (articles.size() == config.maxArticles() ||
                 articlesPage.isEmpty() ||
-                articlesPage.getLast().timestamp() < boundTimestamp
+                articlesPage.getLast().timestamp() < oldLastTimestamp
             ) {
                 break;
             }
         }
 
-        return articles;
+        storage.setLastTimestampOfSource(sourceName, newLastTimestamp);
+        articles.forEach(article -> storage.addJustCollected(sourceName, article));
     }
 }

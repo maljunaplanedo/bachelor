@@ -7,7 +7,7 @@ public interface ConfigsStorage {
 
     void setCollectorConfig(String collectorConfig);
 
-    Map<String, NewsSource.TypeAndConfig> getNewsSourceConfigs();
+    Map<String, NewsSourceTypeAndConfig> getNewsSourceConfigs();
 
-    void setNewsSourceConfig(String source, NewsSource.TypeAndConfig typeAndConfig);
+    void setNewsSourceConfig(String source, NewsSourceTypeAndConfig typeAndConfig);
 }

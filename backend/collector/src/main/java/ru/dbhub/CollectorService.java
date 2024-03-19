@@ -2,15 +2,22 @@ package ru.dbhub;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.Trigger;
+import org.springframework.scheduling.TriggerContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 @Component
@@ -20,7 +27,13 @@ public class CollectorService {
     private final ObjectMapper jsonMapper = new ObjectMapper();
 
     @Autowired
+    private TaskScheduler taskScheduler;
+
+    @Autowired
     private ConfigsStorage configsStorage;
+
+    @Autowired
+    private ArticleStorage articleStorage;
 
     private <C> C parseConfig(String configString, Class<C> configClass) throws BadConfigFormatException {
         try {
@@ -30,11 +43,11 @@ public class CollectorService {
         }
     }
 
-    private Collector createCollector(String config) throws BadConfigFormatException {
-        return new Collector(parseConfig(config, Collector.Config.class));
+    private CollectorConfig parseCollectorConfig(String config) throws BadConfigFormatException {
+        return parseConfig(config, CollectorConfig.class);
     }
 
-    private NewsSource createNewsSource(NewsSource.TypeAndConfig typeAndConfig) throws BadConfigException {
+    private NewsSource createNewsSource(NewsSourceTypeAndConfig typeAndConfig) throws BadConfigException {
         Class<?> sourceClass;
         try {
             var packageName = getClass().getPackageName();
@@ -45,7 +58,7 @@ public class CollectorService {
             throw new BadConfigSourceTypeException();
         }
 
-        var sourceConfigClass = Arrays.stream(sourceClass.getDeclaredClasses())
+        var sourceConfigClass = Arrays.stream(sourceClass.getClasses())
             .filter(clazz -> clazz.getSimpleName().equals("Config"))
             .findFirst().orElseThrow(BadConfigSourceTypeException::new);
 
@@ -65,32 +78,36 @@ public class CollectorService {
         }
     }
 
+    @Transactional
     public String getCollectorConfig() {
         return configsStorage.getCollectorConfig();
     }
 
-    public Map<String, NewsSource.TypeAndConfig> getNewsSourceConfigs() {
+    @Transactional
+    public Map<String, NewsSourceTypeAndConfig> getNewsSourceConfigs() {
         return configsStorage.getNewsSourceConfigs();
     }
 
-    public void validateAndSetCollectorConfig(String config) throws BadConfigFormatException {
-        createCollector(config);
+    @Transactional
+    private void setCollectorConfig(String config) {
         configsStorage.setCollectorConfig(config);
     }
 
-    public void validateAndSetNewsSourceConfig(
-        String source, NewsSource.TypeAndConfig typeAndConfig
-    ) throws BadConfigException {
-        createNewsSource(typeAndConfig);
+    public void validateAndSetCollectorConfig(String config) throws BadConfigFormatException {
+        parseCollectorConfig(config);
+        setCollectorConfig(config);
+    }
+
+    @Transactional
+    private void setNewsSourceConfig(String source, NewsSourceTypeAndConfig typeAndConfig) {
         configsStorage.setNewsSourceConfig(source, typeAndConfig);
     }
 
-    private Collector createCollectorForCollect() {
-        try {
-            return createCollector(getCollectorConfig());
-        } catch (BadConfigFormatException exception) {
-            throw new RuntimeException(exception);
-        }
+    public void validateAndSetNewsSourceConfig(
+        String source, NewsSourceTypeAndConfig typeAndConfig
+    ) throws BadConfigException {
+        createNewsSource(typeAndConfig);
+        setNewsSourceConfig(source, typeAndConfig);
     }
 
     private Map<String, NewsSource> createNewsSourcesForCollect() {
@@ -107,10 +124,15 @@ public class CollectorService {
         return newsSources;
     }
 
-    @Scheduled(fixedRateString = "${ru.dbhub.collect-rate}")
+    @Transactional
+    List<Article> getArticlesAfter(long boundId) {
+        return articleStorage.getAfter(boundId);
+    }
+
+    @PostConstruct
     public void collect() {
         try {
-            validateAndSetCollectorConfig("{\"maxArticles\":3,\"keywords\":[]}");
+            validateAndSetCollectorConfig("{\"rate\":60,\"maxArticles\":3,\"keywords\":[]}");
         } catch (BadConfigFormatException e) {
             throw new RuntimeException(e);
         }
@@ -118,7 +140,7 @@ public class CollectorService {
         try {
             validateAndSetNewsSourceConfig(
                 "habr.com",
-                new NewsSource.TypeAndConfig(
+                new NewsSourceTypeAndConfig(
                     "HTML",
                     "{" +
                         "\"urlWithPageVar\":\"https://habr.com/ru/articles/page{page}\"," +
@@ -134,14 +156,36 @@ public class CollectorService {
             throw new RuntimeException(e);
         }
 
-        var collector = createCollectorForCollect();
+        ///////////////////////////////////////
 
-        createNewsSourcesForCollect().forEach((name, source) -> {
+        CollectorConfig collectorConfig;
+        try {
+            collectorConfig = parseCollectorConfig(getCollectorConfig());
+        } catch (BadConfigFormatException e) {
+            throw new RuntimeException(e);
+        }
+
+        var collector = new Collector(collectorConfig);
+
+        getNewsSourceConfigs().forEach((name, typeAndConfig) -> {
+            NewsSource source;
             try {
-                logger.debug(collector.getArticlesFromSourceSince(source, 0).toString());
+                source = createNewsSource(typeAndConfig);
+            } catch (BadConfigException exception) {
+                throw new RuntimeException(exception);
+            }
+
+            try {
+                collector.collect(name, source, articleStorage);
             } catch (IOException exception) {
                 logger.error("", exception);
             }
         });
+
+        taskScheduler.schedule(
+            this::collect,
+            triggerContext ->
+                triggerContext.getClock().instant().plus(Duration.ofSeconds(collectorConfig.rate()))
+        );
     }
 }

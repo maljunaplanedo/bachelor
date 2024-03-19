@@ -13,7 +13,7 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
-public final class HTMLNewsSource implements NewsSource {
+final class HTMLNewsSource implements NewsSource {
     public record Config(
         String urlWithPageVar,
         String itemSelector,
@@ -50,9 +50,6 @@ public final class HTMLNewsSource implements NewsSource {
         var url = new UriTemplate(config.urlWithPageVar).expand(pageNo).toString();
 
         var htmlDocument = Jsoup.connect(url).get();
-
-        var logger = LoggerFactory.getLogger(getClass());
-        logger.error(config.linkSelector());
 
         return htmlDocument.select(config.itemSelector()).stream()
             .map(item ->

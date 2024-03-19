@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class RSSNewsSource implements NewsSource {
+final class RSSNewsSource implements NewsSource {
     public record Config(String url, boolean isPaged) {
     }
 
