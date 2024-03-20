@@ -25,9 +25,6 @@ public class ConfigController {
     @Autowired
     private CollectorService collectorService;
 
-    @Autowired
-    private ErrorControllerAdvice errorControllerAdvice;
-
     @GetMapping(value = "/collector")
     public String getCollectorConfig() {
         return collectorService.getCollectorConfig().orElse("");
@@ -54,18 +51,6 @@ public class ConfigController {
         collectorService.validateAndSetNewsSourceConfig(
             newsSourceNameTypeAndConfig.name(),
             new NewsSourceTypeAndConfig(newsSourceNameTypeAndConfig.type(), newsSourceNameTypeAndConfig.config())
-        );
-    }
-
-    @ExceptionHandler(BadConfigFormatException.class)
-    void badConfigFormat(Exception ex, WebRequest request) throws Exception {
-        errorControllerAdvice.handleException(new ResponseStatusException(BAD_REQUEST, "Bad config format"), request);
-    }
-
-    @ExceptionHandler(BadConfigSourceTypeException.class)
-    void badConfigSourceType(Exception ex, WebRequest request) throws Exception {
-        errorControllerAdvice.handleException(
-            new ResponseStatusException(BAD_REQUEST, "Bad config source type"), request
         );
     }
 }
