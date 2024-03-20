@@ -1,9 +1,10 @@
 package ru.dbhub;
 
 import java.util.Map;
+import java.util.Optional;
 
 public interface ConfigsStorage {
-    String getCollectorConfig();
+    Optional<String> getCollectorConfig();
 
     void setCollectorConfig(String collectorConfig);
 

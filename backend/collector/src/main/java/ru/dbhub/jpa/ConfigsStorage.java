@@ -12,6 +12,7 @@ import ru.dbhub.ConfigsStorage;
 import ru.dbhub.NewsSourceTypeAndConfig;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Entity
@@ -87,8 +88,9 @@ class ConfigsStorageImpl implements ConfigsStorage {
     private NewsSourceConfigRepository newsSourceConfigRepository;
 
     @Override
-    public String getCollectorConfig() {
-        return collectorConfigRepository.findById(CollectorConfigModel.FAKE_ID).orElseThrow().getConfig();
+    public Optional<String> getCollectorConfig() {
+        return collectorConfigRepository.findById(CollectorConfigModel.FAKE_ID)
+            .map(CollectorConfigModel::getConfig);
     }
 
     @Override

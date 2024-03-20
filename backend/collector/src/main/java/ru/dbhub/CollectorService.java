@@ -6,19 +6,24 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.Trigger;
-import org.springframework.scheduling.TriggerContext;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class CollectorService {
@@ -26,8 +31,11 @@ public class CollectorService {
 
     private final ObjectMapper jsonMapper = new ObjectMapper();
 
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
     @Autowired
-    private TaskScheduler taskScheduler;
+    @Lazy
+    private CollectorService self;
 
     @Autowired
     private ConfigsStorage configsStorage;
@@ -79,7 +87,7 @@ public class CollectorService {
     }
 
     @Transactional
-    public String getCollectorConfig() {
+    public Optional<String> getCollectorConfig() {
         return configsStorage.getCollectorConfig();
     }
 
@@ -88,21 +96,29 @@ public class CollectorService {
         return configsStorage.getNewsSourceConfigs();
     }
 
-    @Transactional
-    private void setCollectorConfig(String config) {
+    private void doSetCollectorConfig(String config) {
         configsStorage.setCollectorConfig(config);
     }
 
+    private void setCollectorConfig(String config) {
+        boolean collectorConfigWasAbsent = configsStorage.getCollectorConfig().isEmpty();
+        doSetCollectorConfig(config);
+        if (collectorConfigWasAbsent) {
+            collect();
+        }
+    }
+
+    @Transactional
     public void validateAndSetCollectorConfig(String config) throws BadConfigFormatException {
         parseCollectorConfig(config);
         setCollectorConfig(config);
     }
 
-    @Transactional
     private void setNewsSourceConfig(String source, NewsSourceTypeAndConfig typeAndConfig) {
         configsStorage.setNewsSourceConfig(source, typeAndConfig);
     }
 
+    @Transactional
     public void validateAndSetNewsSourceConfig(
         String source, NewsSourceTypeAndConfig typeAndConfig
     ) throws BadConfigException {
@@ -110,60 +126,28 @@ public class CollectorService {
         setNewsSourceConfig(source, typeAndConfig);
     }
 
-    private Map<String, NewsSource> createNewsSourcesForCollect() {
-        Map<String, NewsSource> newsSources = new HashMap<>();
-
-        getNewsSourceConfigs().forEach((name, typeAndConfig) -> {
-            try {
-                newsSources.put(name, createNewsSource(typeAndConfig));
-            } catch (BadConfigException exception) {
-                throw new RuntimeException(exception);
-            }
-        });
-
-        return newsSources;
-    }
-
     @Transactional
-    List<Article> getArticlesAfter(long boundId) {
+    public List<Article> getArticlesAfter(long boundId) {
         return articleStorage.getAfter(boundId);
     }
 
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
+    @Async
+    @Transactional
     public void collect() {
-        try {
-            validateAndSetCollectorConfig("{\"rate\":60,\"maxArticles\":3,\"keywords\":[]}");
-        } catch (BadConfigFormatException e) {
-            throw new RuntimeException(e);
+        var collectorConfigStringOptional = getCollectorConfig();
+        if (collectorConfigStringOptional.isEmpty()) {
+            return;
         }
-
-        try {
-            validateAndSetNewsSourceConfig(
-                "habr.com",
-                new NewsSourceTypeAndConfig(
-                    "HTML",
-                    "{" +
-                        "\"urlWithPageVar\":\"https://habr.com/ru/articles/page{page}\"," +
-                        "\"itemSelector\":\".tm-articles-list__item\"," +
-                        "\"linkSelector\":\".tm-article-snippet__readmore\"," +
-                        "\"titleSelector\":\".tm-title\"," +
-                        "\"textSelector\":\".article-formatted-body\"," +
-                        "\"timeSelector\":\".tm-article-datetime-published time\"" +
-                        "}"
-                )
-            );
-        } catch (BadConfigException e) {
-            throw new RuntimeException(e);
-        }
-
-        ///////////////////////////////////////
 
         CollectorConfig collectorConfig;
         try {
-            collectorConfig = parseCollectorConfig(getCollectorConfig());
-        } catch (BadConfigFormatException e) {
-            throw new RuntimeException(e);
+            collectorConfig = parseCollectorConfig(collectorConfigStringOptional.get());
+        } catch (BadConfigFormatException exception) {
+            throw new RuntimeException(exception);
         }
+
+        scheduler.schedule(self::collect, collectorConfig.rate(), TimeUnit.SECONDS);
 
         var collector = new Collector(collectorConfig);
 
@@ -181,11 +165,5 @@ public class CollectorService {
                 logger.error("", exception);
             }
         });
-
-        taskScheduler.schedule(
-            this::collect,
-            triggerContext ->
-                triggerContext.getClock().instant().plus(Duration.ofSeconds(collectorConfig.rate()))
-        );
     }
 }

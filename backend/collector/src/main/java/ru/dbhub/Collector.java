@@ -21,7 +21,6 @@ class Collector {
         // return textContainsKeyword(article.title()) || textContainsKeyword(article.text());
     }
 
-    @Transactional
     void collect(
         String sourceName, NewsSource source, ArticleStorage storage
     ) throws IOException {
@@ -51,6 +50,6 @@ class Collector {
         }
 
         storage.setLastTimestampOfSource(sourceName, newLastTimestamp);
-        articles.forEach(article -> storage.addJustCollected(sourceName, article));
+        articles.reversed().forEach(article -> storage.addJustCollected(sourceName, article));
     }
 }

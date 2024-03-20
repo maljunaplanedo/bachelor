@@ -24,7 +24,6 @@ dependencies {
     implementation("rome:rome:1.0")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("io.projectreactor:reactor-test")
 }
 
 tasks.withType<Test> {
