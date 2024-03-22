@@ -13,7 +13,9 @@ class Collector {
     }
 
     private boolean textContainsKeyword(String text) {
-        return Arrays.stream(text.split("\\s+")).anyMatch(config.keywords()::contains);
+        return Arrays.stream(text.split("\\s+"))
+            .map(String::toLowerCase)
+            .anyMatch(config.keywords()::contains);
     }
 
     private boolean shouldCollectByTopic(JustCollectedArticle article) {
