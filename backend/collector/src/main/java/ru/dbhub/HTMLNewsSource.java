@@ -26,6 +26,8 @@ final class HTMLNewsSource implements NewsSource {
 
     private final Config config;
 
+
+
     public HTMLNewsSource(Config config) {
         this.config = config;
     }

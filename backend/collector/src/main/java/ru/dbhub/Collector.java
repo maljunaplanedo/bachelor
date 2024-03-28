@@ -1,7 +1,5 @@
 package ru.dbhub;
 
-import org.springframework.transaction.annotation.Transactional;
-
 import java.io.IOException;
 import java.util.*;
 
@@ -19,8 +17,7 @@ class Collector {
     }
 
     private boolean shouldCollectByTopic(JustCollectedArticle article) {
-        return true;
-        // return textContainsKeyword(article.title()) || textContainsKeyword(article.text());
+        return textContainsKeyword(article.title()) || textContainsKeyword(article.text());
     }
 
     void collect(

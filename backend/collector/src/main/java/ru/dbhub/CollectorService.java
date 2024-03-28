@@ -104,7 +104,7 @@ public class CollectorService {
         boolean collectorConfigWasAbsent = configsStorage.getCollectorConfig().isEmpty();
         doSetCollectorConfig(config);
         if (collectorConfigWasAbsent) {
-            collect();
+            self.collect();
         }
     }
 
