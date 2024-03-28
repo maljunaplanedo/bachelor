@@ -6,8 +6,6 @@ import java.util.*;
 class Collector {
     private final CollectorConfig config;
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     Collector(CollectorConfig config) {
         this.config = config;
     }
