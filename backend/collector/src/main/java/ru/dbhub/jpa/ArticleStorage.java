@@ -55,7 +55,7 @@ interface ArticleRepository extends JpaRepository<ArticleModel, Long> {
 }
 
 @Entity
-@Table(name = "LastTimestampOfSource")
+@Table(name = "LastTimestampsOfSources")
 class LastTimestampOfSourceModel {
     @Id
     private String source;
