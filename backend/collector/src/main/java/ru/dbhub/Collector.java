@@ -1,8 +1,5 @@
 package ru.dbhub;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.*;
 
@@ -33,14 +30,10 @@ class Collector {
         long newLastTimestamp = 0;
 
         for (int pageNo = 1;; ++pageNo) {
-            logger.info("Started collecting page " + pageNo + " of source " + sourceName);
-
             var articlesPage = source.getArticlesPage(pageNo);
             if (newLastTimestamp == 0 && !articlesPage.isEmpty()) {
                 newLastTimestamp = articlesPage.getFirst().timestamp();
             }
-
-            logger.info("Found " + articlesPage.size() + " articles");
 
             articlesPage.stream()
                 .takeWhile(article -> article.timestamp() >= oldLastTimestamp)
