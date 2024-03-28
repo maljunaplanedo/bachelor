@@ -49,7 +49,7 @@ class ArticleModel {
 
 @Repository
 interface ArticleRepository extends JpaRepository<ArticleModel, Long> {
-    List<ArticleModel> findByIdGreaterThanEqualOrderById(long id);
+    List<ArticleModel> findByIdGreaterThanEqualOrderByIdAsc(long id);
 
     boolean existsBySourceAndLink(String source, String link);
 }
@@ -89,7 +89,7 @@ class ArticleStorageImpl implements ArticleStorage {
 
     @Override
     public List<Article> getAfter(long boundId) {
-        return articleRepository.findByIdGreaterThanEqualOrderById(boundId).stream()
+        return articleRepository.findByIdGreaterThanEqualOrderByIdAsc(boundId).stream()
             .map(ArticleModel::toArticle)
             .toList();
     }
