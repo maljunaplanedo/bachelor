@@ -11,8 +11,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-final class RSSNewsSource implements NewsSource {
-    public record Config(String url, boolean isPaged) {
+final class RSSNewsSource extends PageLimitedNewsSource {
+    public record Config(String url, boolean isPaged, int maxPage) {
     }
 
     private final SyndFeedInput syndFeedInput = new SyndFeedInput();
@@ -20,6 +20,7 @@ final class RSSNewsSource implements NewsSource {
     private final Config config;
 
     public RSSNewsSource(Config config) {
+        super(config.maxPage());
         this.config = config;
     }
 
@@ -59,7 +60,7 @@ final class RSSNewsSource implements NewsSource {
     }
 
     @Override
-    public List<JustCollectedArticle> getArticlesPage(int pageNo) throws IOException {
+    public List<JustCollectedArticle> doGetArticlesPage(int pageNo) throws IOException {
         return getEntries(pageNo).stream()
             .map(this::entryToArticle)
             .toList();

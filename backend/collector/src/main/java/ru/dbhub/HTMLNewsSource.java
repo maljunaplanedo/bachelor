@@ -13,22 +13,22 @@ import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
-final class HTMLNewsSource implements NewsSource {
+final class HTMLNewsSource extends PageLimitedNewsSource {
     public record Config(
         String urlWithPageVar,
         String itemSelector,
         String linkSelector,
         String titleSelector,
         String textSelector,
-        String timeSelector
+        String timeSelector,
+        int maxPage
     ) {
     }
 
     private final Config config;
 
-
-
     public HTMLNewsSource(Config config) {
+        super(config.maxPage());
         this.config = config;
     }
 
@@ -48,7 +48,7 @@ final class HTMLNewsSource implements NewsSource {
     }
 
     @Override
-    public List<JustCollectedArticle> getArticlesPage(int pageNo) throws IOException {
+    public List<JustCollectedArticle> doGetArticlesPage(int pageNo) throws IOException {
         var url = new UriTemplate(config.urlWithPageVar).expand(pageNo).toString();
 
         var htmlDocument = Jsoup.connect(url).get();
