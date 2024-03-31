@@ -16,8 +16,13 @@ public class ArticleController {
     @Autowired
     private CollectorService collectorService;
 
-    @GetMapping("")
-    public List<Article> getArticles(@RequestParam long boundId) {
+    @GetMapping("/after")
+    public List<Article> getArticlesAfter(@RequestParam long boundId) {
         return collectorService.getArticlesAfter(boundId);
+    }
+
+    @GetMapping("/last")
+    public List<Article> getLastArticles(@RequestParam int count) {
+        return collectorService.getLastArticles(count);
     }
 }

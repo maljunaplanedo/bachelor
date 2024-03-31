@@ -11,4 +11,6 @@ public interface ConfigsStorage {
     Map<String, NewsSourceTypeAndConfig> getNewsSourceConfigs();
 
     void setNewsSourceConfig(String source, NewsSourceTypeAndConfig typeAndConfig);
+
+    void removeNewsSourceConfig(String source);
 }

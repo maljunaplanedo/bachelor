@@ -76,7 +76,7 @@ class NewsSourceConfigModel {
 }
 
 @Repository
-interface NewsSourceConfigRepository extends JpaRepository<NewsSourceConfigModel, Long> {
+interface NewsSourceConfigRepository extends JpaRepository<NewsSourceConfigModel, String> {
 }
 
 @Component
@@ -114,5 +114,10 @@ class ConfigsStorageImpl implements ConfigsStorage {
         newsSourceConfigRepository.save(
             new NewsSourceConfigModel(source, typeAndConfig.type(), typeAndConfig.config())
         );
+    }
+
+    @Override
+    public void removeNewsSourceConfig(String source) {
+        newsSourceConfigRepository.deleteById(source);
     }
 }

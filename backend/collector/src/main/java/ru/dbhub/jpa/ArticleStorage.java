@@ -2,6 +2,7 @@ package ru.dbhub.jpa;
 
 import jakarta.persistence.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
@@ -12,7 +13,14 @@ import ru.dbhub.JustCollectedArticle;
 import java.util.List;
 
 @Entity
-@Table(name = "Articles", indexes = @Index(columnList = "source,link"))
+@Table(
+    name = "Articles",
+    indexes = {
+        @Index(columnList = "timestamp"),
+        @Index(columnList = "id,timestamp"),
+        @Index(columnList = "source,link")
+    }
+)
 class ArticleModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,7 +57,9 @@ class ArticleModel {
 
 @Repository
 interface ArticleRepository extends JpaRepository<ArticleModel, Long> {
-    List<ArticleModel> findByIdGreaterThanEqualOrderByIdAsc(long id);
+    List<ArticleModel> findByIdGreaterThanOrderByTimestampAsc(long id);
+
+    List<ArticleModel> findByOrderByTimestampDesc(Limit limit);
 
     boolean existsBySourceAndLink(String source, String link);
 }
@@ -89,9 +99,16 @@ class ArticleStorageImpl implements ArticleStorage {
 
     @Override
     public List<Article> getAfter(long boundId) {
-        return articleRepository.findByIdGreaterThanEqualOrderByIdAsc(boundId).stream()
+        return articleRepository.findByIdGreaterThanOrderByTimestampAsc(boundId).stream()
             .map(ArticleModel::toArticle)
             .toList();
+    }
+
+    @Override
+    public List<Article> getLast(int count) {
+        return articleRepository.findByOrderByTimestampDesc(Limit.of(count)).stream()
+            .map(ArticleModel::toArticle)
+            .toList().reversed();
     }
 
     @Override

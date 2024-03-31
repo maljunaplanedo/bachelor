@@ -6,8 +6,11 @@ import java.util.*;
 class Collector {
     private final CollectorConfig config;
 
-    Collector(CollectorConfig config) {
+    private final ArticleStorage storage;
+
+    Collector(CollectorConfig config, ArticleStorage storage) {
         this.config = config;
+        this.storage = storage;
     }
 
     private boolean textContainsKeyword(String text) {
@@ -20,9 +23,7 @@ class Collector {
         return textContainsKeyword(article.title()) || textContainsKeyword(article.text());
     }
 
-    void collect(
-        String sourceName, NewsSource source, ArticleStorage storage
-    ) throws IOException {
+    void collect(String sourceName, NewsSource source) throws IOException {
         List<JustCollectedArticle> articles = new ArrayList<>();
         long oldLastTimestamp = storage.getLastTimestampOfSource(sourceName);
         long newLastTimestamp = 0;
@@ -37,10 +38,10 @@ class Collector {
                 .takeWhile(article -> article.timestamp() >= oldLastTimestamp)
                 .filter(this::shouldCollectByTopic)
                 .filter(article -> !storage.has(sourceName, article.link()))
-                .limit(config.maxArticles() - articles.size())
+                .limit(config.maxArticlesPerSource() - articles.size())
                 .forEach(articles::add);
 
-            boolean shouldStopCollecting = articles.size() == config.maxArticles()
+            boolean shouldStopCollecting = articles.size() == config.maxArticlesPerSource()
                 || articlesPage.isEmpty()
                 || articlesPage.getLast().timestamp() < oldLastTimestamp;
             if (shouldStopCollecting) {
@@ -49,6 +50,6 @@ class Collector {
         }
 
         storage.setLastTimestampOfSource(sourceName, newLastTimestamp);
-        articles.reversed().forEach(article -> storage.addJustCollected(sourceName, article));
+        articles.forEach(article -> storage.addJustCollected(sourceName, article));
     }
 }

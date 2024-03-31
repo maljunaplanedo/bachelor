@@ -6,6 +6,8 @@ import java.util.Optional;
 public interface ArticleStorage {
     List<Article> getAfter(long boundId);
 
+    List<Article> getLast(int count);
+
     long getLastTimestampOfSource(String source);
 
     void setLastTimestampOfSource(String source, long timestamp);

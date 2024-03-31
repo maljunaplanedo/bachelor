@@ -4,7 +4,7 @@ import java.util.Set;
 
 record CollectorConfig(
     long rate,
-    long maxArticles,
+    long maxArticlesPerSource,
     Set<String> keywords
 ) {
 }

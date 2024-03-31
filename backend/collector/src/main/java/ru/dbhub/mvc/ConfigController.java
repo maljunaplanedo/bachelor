@@ -8,6 +8,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ResponseStatusException;
 import ru.dbhub.*;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -15,17 +16,10 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 @RestController
 @RequestMapping("/configs")
 public class ConfigController {
-    public record NewsSourceNameTypeAndConfig(
-        String name,
-        String type,
-        String config
-    ) {
-    }
-
     @Autowired
     private CollectorService collectorService;
 
-    @GetMapping(value = "/collector")
+    @GetMapping("/collector")
     public String getCollectorConfig() {
         return collectorService.getCollectorConfig().orElse("");
     }
@@ -44,13 +38,15 @@ public class ConfigController {
         }
     }
 
-    @PostMapping("/source")
-    public void setNewsSourceConfig(
-        @RequestBody NewsSourceNameTypeAndConfig newsSourceNameTypeAndConfig
+    @PostMapping("/sources")
+    public void setNewsSourceConfigs(
+        @RequestBody Map<String, NewsSourceTypeAndConfig> sourceConfigs
     ) throws BadConfigException {
-        collectorService.validateAndSetNewsSourceConfig(
-            newsSourceNameTypeAndConfig.name(),
-            new NewsSourceTypeAndConfig(newsSourceNameTypeAndConfig.type(), newsSourceNameTypeAndConfig.config())
-        );
+        collectorService.validateAndSetNewsSourceConfigs(sourceConfigs);
+    }
+
+    @DeleteMapping("/sources")
+    public void deleteNewsSourceConfigs(@RequestBody List<String> sourceNames) {
+        collectorService.removeNewsSourceConfigs(sourceNames);
     }
 }

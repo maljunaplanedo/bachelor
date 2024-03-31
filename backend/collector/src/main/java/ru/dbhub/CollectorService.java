@@ -2,24 +2,20 @@ package ru.dbhub;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
-import org.springframework.scheduling.TaskScheduler;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -104,7 +100,14 @@ public class CollectorService {
         boolean collectorConfigWasAbsent = configsStorage.getCollectorConfig().isEmpty();
         doSetCollectorConfig(config);
         if (collectorConfigWasAbsent) {
-            self.collect();
+            TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        collectAsync();
+                    }
+                }
+            );
         }
     }
 
@@ -119,11 +122,18 @@ public class CollectorService {
     }
 
     @Transactional
-    public void validateAndSetNewsSourceConfig(
-        String source, NewsSourceTypeAndConfig typeAndConfig
+    public void validateAndSetNewsSourceConfigs(
+        Map<String, NewsSourceTypeAndConfig> sourceConfigs
     ) throws BadConfigException {
-        createNewsSource(typeAndConfig);
-        setNewsSourceConfig(source, typeAndConfig);
+        for (var sourceNameToTypeAndConfig : sourceConfigs.entrySet()) {
+            createNewsSource(sourceNameToTypeAndConfig.getValue());
+            setNewsSourceConfig(sourceNameToTypeAndConfig.getKey(), sourceNameToTypeAndConfig.getValue());
+        }
+    }
+
+    @Transactional
+    public void removeNewsSourceConfigs(List<String> sourceNames) {
+        sourceNames.forEach(configsStorage::removeNewsSourceConfig);
     }
 
     @Transactional
@@ -131,14 +141,38 @@ public class CollectorService {
         return articleStorage.getAfter(boundId);
     }
 
+    @Transactional
+    public List<Article> getLastArticles(int count) {
+        return articleStorage.getLast(count);
+    }
+
+    private void scheduleCollect(long delay) {
+        scheduler.schedule(
+            () -> {
+                try {
+                    self.collect();
+                } catch (Exception exception) {
+                    logger.error("Collect threw an exception", exception);
+                }
+            },
+            delay,
+            TimeUnit.SECONDS
+        );
+    }
+
     @EventListener(ApplicationReadyEvent.class)
-    @Async
+    public void collectAsync() {
+        scheduleCollect(0);
+    }
+
     @Transactional
     public void collect() {
         var collectorConfigStringOptional = getCollectorConfig();
         if (collectorConfigStringOptional.isEmpty()) {
             return;
         }
+
+        logger.info("Starting to collect news");
 
         CollectorConfig collectorConfig;
         try {
@@ -147,9 +181,9 @@ public class CollectorService {
             throw new RuntimeException(exception);
         }
 
-        scheduler.schedule(self::collect, collectorConfig.rate(), TimeUnit.SECONDS);
+        scheduleCollect(collectorConfig.rate());
 
-        var collector = new Collector(collectorConfig);
+        var collector = new Collector(collectorConfig, articleStorage);
 
         getNewsSourceConfigs().forEach((name, typeAndConfig) -> {
             NewsSource source;
@@ -160,10 +194,12 @@ public class CollectorService {
             }
 
             try {
-                collector.collect(name, source, articleStorage);
+                collector.collect(name, source);
             } catch (IOException exception) {
                 logger.error("", exception);
             }
         });
+
+        logger.info("Finished collecting news");
     }
 }
