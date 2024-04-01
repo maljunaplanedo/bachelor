@@ -1,3 +1,3 @@
 rootProject.name = "backend"
 
-include("collector")
+include("collector", "apigateway", "lib:article")
