@@ -71,7 +71,7 @@ public class CollectorConfigController {
                 .get()
                 .uri("/sources")
                 .retrieve()
-                .bodyToMono(Map.class)
+                .bodyToMono(new ParameterizedTypeReference<Map<String, NewsSourceTypeAndConfig>>() {})
                 .block()
         );
     }
