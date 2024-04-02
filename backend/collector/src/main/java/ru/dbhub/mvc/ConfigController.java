@@ -1,10 +1,7 @@
 package ru.dbhub.mvc;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.server.ResponseStatusException;
 import ru.dbhub.*;
 
@@ -24,25 +21,31 @@ public class ConfigController {
         return collectorService.getCollectorConfig().orElse("");
     }
 
-    @GetMapping("/sources")
-    public Map<String, NewsSourceTypeAndConfig> getNewsSourceConfigs() {
-        return collectorService.getNewsSourceConfigs();
-    }
-
     @PostMapping("/collector")
     public void setCollectorConfig(@RequestBody String config) {
         try {
             collectorService.validateAndSetCollectorConfig(config);
         } catch (BadConfigFormatException exception) {
-            throw new ResponseStatusException(BAD_REQUEST, "Bad config format");
+            throw new ResponseStatusException(BAD_REQUEST, CollectorConfigError.BAD_FORMAT.getDetail());
         }
     }
 
+    @GetMapping("/sources")
+    public Map<String, NewsSourceTypeAndConfig> getNewsSourceConfigs() {
+        return collectorService.getNewsSourceConfigs();
+    }
+
     @PostMapping("/sources")
-    public void setNewsSourceConfigs(
-        @RequestBody Map<String, NewsSourceTypeAndConfig> sourceConfigs
-    ) throws BadConfigException {
-        collectorService.validateAndSetNewsSourceConfigs(sourceConfigs);
+    public void setNewsSourceConfigs(@RequestBody Map<String, NewsSourceTypeAndConfig> sourceConfigs) {
+        try {
+            collectorService.validateAndSetNewsSourceConfigs(sourceConfigs);
+        } catch (BadConfigFormatException exception) {
+            throw new ResponseStatusException(BAD_REQUEST, CollectorConfigError.BAD_FORMAT.getDetail());
+        } catch (BadConfigSourceTypeException exception) {
+            throw new ResponseStatusException(BAD_REQUEST, CollectorConfigError.BAD_SOURCE_TYPE.getDetail());
+        } catch (BadConfigException unreachable) {
+            throw new RuntimeException(unreachable);
+        }
     }
 
     @DeleteMapping("/sources")

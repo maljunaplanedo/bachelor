@@ -18,7 +18,8 @@ dependencies {
     implementation("com.google.code.findbugs:jsr305:3.0.2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 
-    implementation(project(":lib:article"))
+    implementation(project(":lib:transport"))
+    implementation(project(":lib:mvcerror"))
 }
 
 tasks.withType<Test> {

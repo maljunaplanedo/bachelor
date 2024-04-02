@@ -17,8 +17,6 @@ import java.util.Objects;
 @RestController
 @RequestMapping("/articles")
 public class ArticlesController {
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     private final WebClient webClient;
 
     public ArticlesController(@Value("${ru.dbhub.collector-url}") String collectorUrl) {

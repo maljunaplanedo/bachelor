@@ -1,3 +1,8 @@
 rootProject.name = "backend"
 
-include("collector", "apigateway", "lib:article")
+include(
+    "collector",
+    "apigateway",
+    "lib:mvcerror",
+    "lib:transport"
+)
