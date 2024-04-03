@@ -2,7 +2,8 @@ package ru.dbhub.jpa;
 
 import jakarta.persistence.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Limit;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
@@ -57,9 +58,9 @@ class ArticleModel {
 
 @Repository
 interface ArticleRepository extends JpaRepository<ArticleModel, Long> {
-    List<ArticleModel> findByIdGreaterThanOrderByTimestampAsc(long id);
+    List<ArticleModel> findByIdGreaterThanOrderByTimestampDesc(long id);
 
-    List<ArticleModel> findByOrderByTimestampDesc(Limit limit);
+    List<ArticleModel> findByIdLessThanEqualOrderByTimestampDesc(long id, Pageable pageable);
 
     boolean existsBySourceAndLink(String source, String link);
 }
@@ -99,16 +100,18 @@ class ArticleStorageImpl implements ArticleStorage {
 
     @Override
     public List<Article> getAfter(long boundId) {
-        return articleRepository.findByIdGreaterThanOrderByTimestampAsc(boundId).stream()
+        return articleRepository.findByIdGreaterThanOrderByTimestampDesc(boundId).stream()
             .map(ArticleModel::toArticle)
             .toList();
     }
 
     @Override
-    public List<Article> getLast(int count) {
-        return articleRepository.findByOrderByTimestampDesc(Limit.of(count)).stream()
+    public List<Article> getPage(long boundId, int page, int count) {
+        return articleRepository
+            .findByIdLessThanEqualOrderByTimestampDesc(boundId, PageRequest.of(page, count))
+            .stream()
             .map(ArticleModel::toArticle)
-            .toList().reversed();
+            .toList();
     }
 
     @Override

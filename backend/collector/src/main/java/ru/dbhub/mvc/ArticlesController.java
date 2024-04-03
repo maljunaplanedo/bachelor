@@ -13,6 +13,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/articles")
 public class ArticlesController {
+    private static final String LONG_MAX_VALUE_STR = String.valueOf(Long.MAX_VALUE);
+
     @Autowired
     private CollectorService collectorService;
 
@@ -21,8 +23,12 @@ public class ArticlesController {
         return collectorService.getArticlesAfter(boundId);
     }
 
-    @GetMapping("/last")
-    public List<Article> getLastArticles(@RequestParam int count) {
-        return collectorService.getLastArticles(count);
+    @GetMapping("/page")
+    public List<Article> getArticlesPage(
+        @RequestParam(defaultValue = "9223372036854775807") long boundId,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam int count
+    ) {
+        return collectorService.getArticlesPage(boundId, page, count);
     }
 }

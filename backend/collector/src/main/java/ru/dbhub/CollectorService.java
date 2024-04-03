@@ -154,8 +154,8 @@ public class CollectorService {
     }
 
     @Transactional
-    public List<Article> getLastArticles(int count) {
-        return articleStorage.getLast(count);
+    public List<Article> getArticlesPage(long boundId, int page, int count) {
+        return articleStorage.getPage(boundId, page, count);
     }
 
     private void scheduleCollect(long delay) {
