@@ -60,7 +60,7 @@ public class CollectorConfigController {
         webClient
             .post()
             .uri("/collector")
-            .body(Mono.just(config), String.class)
+            .bodyValue(config)
             .retrieve()
             .toBodilessEntity()
             .block();
@@ -83,7 +83,7 @@ public class CollectorConfigController {
         webClient
             .post()
             .uri("/sources")
-            .body(Mono.just(sourceConfigs), new ParameterizedTypeReference<Map<String, NewsSourceTypeAndConfig>>() {})
+            .bodyValue(sourceConfigs)
             .retrieve()
             .toBodilessEntity()
             .block();
@@ -94,7 +94,7 @@ public class CollectorConfigController {
         webClient
             .method(HttpMethod.DELETE)
             .uri("/sources")
-            .body(Mono.just(sourceNames), new ParameterizedTypeReference<List<String>>() {})
+            .bodyValue(sourceNames)
             .retrieve()
             .toBodilessEntity()
             .block();
