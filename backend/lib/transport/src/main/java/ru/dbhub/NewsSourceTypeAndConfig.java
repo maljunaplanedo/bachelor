@@ -1,4 +1,9 @@
 package ru.dbhub;
 
-public record NewsSourceTypeAndConfig(String type, String config) {
+import jakarta.validation.constraints.NotNull;
+
+public record NewsSourceTypeAndConfig(
+    @NotNull String type,
+    @NotNull String config
+) {
 }

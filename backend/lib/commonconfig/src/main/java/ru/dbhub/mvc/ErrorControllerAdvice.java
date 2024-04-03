@@ -22,7 +22,7 @@ public class ErrorControllerAdvice extends ResponseEntityExceptionHandler {
     @Nullable
     public final ResponseEntity<Object> handleAnyException(Exception exception, WebRequest request) {
         try {
-            return super.handleException(new ResponseStatusException(INTERNAL_SERVER_ERROR), request);
+            return super.handleException(new ResponseStatusException(INTERNAL_SERVER_ERROR, null, exception), request);
         } catch (Exception unreachable) {
             throw new RuntimeException(unreachable);
         }
