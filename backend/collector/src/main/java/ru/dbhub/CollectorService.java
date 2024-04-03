@@ -2,6 +2,7 @@ package ru.dbhub;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,11 @@ import java.util.concurrent.TimeUnit;
 public class CollectorService {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final ObjectMapper jsonMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper jsonMapper;
+
+    @Autowired
+    private Validator validator;
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
@@ -40,11 +45,18 @@ public class CollectorService {
     private ArticleStorage articleStorage;
 
     private <C> C parseConfig(String configString, Class<C> configClass) throws BadConfigFormatException {
+        C result;
         try {
-            return jsonMapper.readValue(configString, configClass);
+            result = jsonMapper.readValue(configString, configClass);
         } catch (JsonProcessingException exception) {
             throw new BadConfigFormatException();
         }
+
+        if (!validator.validate(result).isEmpty()) {
+            throw new BadConfigFormatException();
+        }
+
+        return result;
     }
 
     private CollectorConfig parseCollectorConfig(String config) throws BadConfigFormatException {

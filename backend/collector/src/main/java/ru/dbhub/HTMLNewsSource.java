@@ -1,5 +1,6 @@
 package ru.dbhub;
 
+import jakarta.validation.constraints.NotNull;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Tag;
@@ -17,17 +18,17 @@ import static java.util.Objects.requireNonNull;
 
 final class HTMLNewsSource extends PageLimitedNewsSource {
     public record Config(
-        String urlWithPageVar,
-        String itemSelector,
-        String linkSelector,
-        String titleSelector,
-        String textSelector,
-        String timeSelector,
-        String timeFormat,
+        @NotNull String urlWithPageVar,
+        @NotNull String itemSelector,
+        @NotNull String linkSelector,
+        @NotNull String titleSelector,
+        @NotNull String textSelector,
+        @NotNull String timeSelector,
+        @NotNull String timeFormat,
         @Nullable String timeZone,
-        boolean usesTimeTag,
-        int maxPage,
-        boolean useLinkForItemInfo
+        @NotNull Boolean usesTimeTag,
+        @NotNull Integer maxPage,
+        @NotNull Boolean useLinkForItemInfo
     ) {
     }
 

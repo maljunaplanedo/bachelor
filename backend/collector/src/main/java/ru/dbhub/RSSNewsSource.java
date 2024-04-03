@@ -5,6 +5,7 @@ import com.sun.syndication.feed.synd.SyndFeed;
 import com.sun.syndication.io.FeedException;
 import com.sun.syndication.io.SyndFeedInput;
 import com.sun.syndication.io.XmlReader;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
@@ -12,7 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class RSSNewsSource extends PageLimitedNewsSource {
-    public record Config(String url, boolean isPaged, int maxPage) {
+    public record Config(
+        @NotNull String url,
+        @NotNull Boolean isPaged,
+        @NotNull Integer maxPage
+    ) {
     }
 
     private final SyndFeedInput syndFeedInput = new SyndFeedInput();

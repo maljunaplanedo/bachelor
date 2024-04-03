@@ -1,5 +1,7 @@
 package ru.dbhub;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -77,7 +79,7 @@ public class CollectorConfigController {
     }
 
     @PostMapping("/sources")
-    public void setNewsSourceConfigs(@RequestBody Map<String, NewsSourceTypeAndConfig> sourceConfigs) {
+    public void setNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceTypeAndConfig> sourceConfigs) {
         webClient
             .post()
             .uri("/sources")
@@ -88,7 +90,7 @@ public class CollectorConfigController {
     }
 
     @DeleteMapping("/sources")
-    public void deleteNewsSourceConfigs(@RequestBody List<String> sourceNames) {
+    public void deleteNewsSourceConfigs(@RequestBody @Valid List<@NotNull String> sourceNames) {
         webClient
             .method(HttpMethod.DELETE)
             .uri("/sources")

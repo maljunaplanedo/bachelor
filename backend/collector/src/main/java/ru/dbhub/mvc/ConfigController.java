@@ -1,5 +1,7 @@
 package ru.dbhub.mvc;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -36,7 +38,7 @@ public class ConfigController {
     }
 
     @PostMapping("/sources")
-    public void setNewsSourceConfigs(@RequestBody Map<String, NewsSourceTypeAndConfig> sourceConfigs) {
+    public void setNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceTypeAndConfig> sourceConfigs) {
         try {
             collectorService.validateAndSetNewsSourceConfigs(sourceConfigs);
         } catch (BadConfigFormatException exception) {
@@ -49,7 +51,7 @@ public class ConfigController {
     }
 
     @DeleteMapping("/sources")
-    public void deleteNewsSourceConfigs(@RequestBody List<String> sourceNames) {
+    public void deleteNewsSourceConfigs(@RequestBody @Valid List<@NotNull String> sourceNames) {
         collectorService.removeNewsSourceConfigs(sourceNames);
     }
 }

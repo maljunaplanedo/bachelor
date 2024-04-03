@@ -1,10 +1,12 @@
 package ru.dbhub;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.util.Set;
 
 record CollectorConfig(
-    long rate,
-    long maxArticlesPerSource,
-    Set<String> keywords
+    @NotNull Long rate,
+    @NotNull Long maxArticlesPerSource,
+    @NotNull Set<@NotNull String> keywords
 ) {
 }

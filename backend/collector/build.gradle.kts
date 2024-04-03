@@ -12,6 +12,6 @@ dependencies {
     implementation("rome:rome:1.0")
     runtimeOnly("org.postgresql:postgresql")
 
+    implementation(project(":lib:commonconfig"))
     implementation(project(":lib:transport"))
-    implementation(project(":lib:mvcerror"))
 }

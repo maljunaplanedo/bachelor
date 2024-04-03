@@ -3,6 +3,6 @@ rootProject.name = "backend"
 include(
     "collector",
     "apigateway",
-    "lib:mvcerror",
+    "lib:commonconfig",
     "lib:transport"
 )

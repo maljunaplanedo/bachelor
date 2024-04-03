@@ -22,4 +22,5 @@ dependencies {
     implementation("org.springframework.boot:spring-boot")
     implementation("com.google.code.findbugs:jsr305:3.0.2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    implementation("jakarta.validation:jakarta.validation-api")
 }
