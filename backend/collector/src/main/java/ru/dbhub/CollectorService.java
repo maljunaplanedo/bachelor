@@ -208,7 +208,7 @@ public class CollectorService {
             try {
                 collector.collect(name, source);
             } catch (IOException exception) {
-                logger.error("", exception);
+                logger.error("IOException trying to collect news from source " + name, exception);
             }
         });
 
