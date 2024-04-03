@@ -15,7 +15,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
-import reactor.core.publisher.Mono;
 import ru.dbhub.mvc.CollectorConfigError;
 import ru.dbhub.mvc.ErrorControllerAdvice;
 
