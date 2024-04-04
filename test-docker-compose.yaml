@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  apigateway:
+    build:
+      context: backend
+      dockerfile: apigateway/Dockerfile
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      - DBHUB_PORT=8082
+      - DBHUB_COLLECTOR_URL=http://collector:8081
+      - DBHUB_ADMIN_USERNAME=admin
+      - DBHUB_ADMIN_PASSWORD=admin
+      - DBHUB_FRONTEND_URL=http://localhost:8079
+    depends_on:
+      - collector
+  collector:
+    build:
+      context: backend
+      dockerfile: collector/Dockerfile
+    restart: always
+    environment:
+      - DBHUB_PORT=8081
+      - DBHUB_DATABASE_URL=jdbc:postgresql://db:5432/postgres
+      - DBHUB_DATABASE_USERNAME=postgres
+      - DBHUB_DATABASE_PASSWORD=1234
+    depends_on:
+      - db
+  frontend:
+    build:
+      context: frontend
+      args:
+        - DBHUB_API_URL=http://localhost:8082
+    ports:
+      - "8079:80"
+    restart: always
+    depends_on:
+      - apigateway
+  db:
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_PASSWORD=1234
+    volumes:
+      - postgres_data:/var/lib/postgresql
+volumes:
+  postgres_data:

@@ -24,6 +24,12 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class CollectorService {
+    private static final long NO_BOUND_ARTICLE_ID = -1;
+
+    private static final long ARTICLE_ID_BEFORE_ALL = 0;
+
+    private static final long ARTICLE_ID_AFTER_ALL = Long.MAX_VALUE;
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
@@ -148,14 +154,24 @@ public class CollectorService {
         sourceNames.forEach(configsStorage::removeNewsSourceConfig);
     }
 
-    @Transactional
-    public List<Article> getArticlesAfter(long boundId) {
-        return articleStorage.getAfter(boundId);
+    private long getCurrentBoundArticleId() {
+        return articleStorage.getMaxId().orElse(0L);
     }
 
     @Transactional
-    public List<Article> getArticlesPage(long boundId, int page, int count) {
-        return articleStorage.getPage(boundId, page, count);
+    public ArticlesAndBoundId getArticlesAfter(long boundId) {
+        return new ArticlesAndBoundId(
+            articleStorage.getAfter(boundId == NO_BOUND_ARTICLE_ID ? ARTICLE_ID_BEFORE_ALL : boundId),
+            getCurrentBoundArticleId()
+        );
+    }
+
+    @Transactional
+    public ArticlesAndBoundId getArticlesPage(long boundId, int page, int count) {
+        return new ArticlesAndBoundId(
+            articleStorage.getPage(boundId == NO_BOUND_ARTICLE_ID ? ARTICLE_ID_AFTER_ALL : boundId, page, count),
+            boundId == NO_BOUND_ARTICLE_ID ? getCurrentBoundArticleId() : boundId
+        );
     }
 
     private void scheduleCollect(long delay) {

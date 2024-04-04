@@ -3,10 +3,7 @@ package ru.dbhub;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.Nullable;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -30,7 +27,7 @@ public class ArticlesController {
     private String collectorUrl;
 
     @GetMapping("/after")
-    public List<Article> getArticlesAfter(@RequestParam long boundId) {
+    public ArticlesAndBoundId getArticlesAfter(@RequestParam long boundId) {
         return Objects.requireNonNull(
             webClient
                 .get()
@@ -41,16 +38,14 @@ public class ArticlesController {
                         .build()
                 )
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<Article>>() {})
+                .bodyToMono(ArticlesAndBoundId.class)
                 .block()
         );
     }
 
     @GetMapping("/page")
-    public List<Article> getArticlesPage(
-        @RequestParam(required = false) @Nullable Long boundId,
-        @RequestParam(required = false) @Nullable Integer page,
-        @RequestParam int count
+    public ArticlesAndBoundId getArticlesPage(
+        @RequestParam long boundId, @RequestParam int page, @RequestParam int count
     ) {
         return Objects.requireNonNull(
             webClient
@@ -58,13 +53,13 @@ public class ArticlesController {
                 .uri(
                     uriBuilder -> uriBuilder
                         .path("/page")
-                        .queryParamIfPresent("boundId", Optional.ofNullable(boundId))
-                        .queryParamIfPresent("page", Optional.ofNullable(page))
+                        .queryParam("boundId", boundId)
+                        .queryParam("page", page)
                         .queryParam("count", count)
                         .build()
                 )
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<Article>>() {})
+                .bodyToMono(ArticlesAndBoundId.class)
                 .block()
         );
     }

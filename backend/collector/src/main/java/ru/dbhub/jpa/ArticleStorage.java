@@ -12,6 +12,7 @@ import ru.dbhub.ArticleStorage;
 import ru.dbhub.JustCollectedArticle;
 
 import java.util.List;
+import java.util.Optional;
 
 @Entity
 @Table(
@@ -54,6 +55,10 @@ class ArticleModel {
     Article toArticle() {
         return new Article(id, source, link, title, text, timestamp);
     }
+
+    Long getId() {
+        return id;
+    }
 }
 
 @Repository
@@ -61,6 +66,8 @@ interface ArticleRepository extends JpaRepository<ArticleModel, Long> {
     List<ArticleModel> findByIdGreaterThanOrderByTimestampDesc(long id);
 
     List<ArticleModel> findByIdLessThanEqualOrderByTimestampDesc(long id, Pageable pageable);
+
+    Optional<ArticleModel> findTopByOrderByIdDesc();
 
     boolean existsBySourceAndLink(String source, String link);
 }
@@ -112,6 +119,13 @@ class ArticleStorageImpl implements ArticleStorage {
             .stream()
             .map(ArticleModel::toArticle)
             .toList();
+    }
+
+    @Override
+    public Optional<Long> getMaxId() {
+        return articleRepository
+            .findTopByOrderByIdDesc()
+            .map(ArticleModel::getId);
     }
 
     @Override

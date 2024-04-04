@@ -8,6 +8,8 @@ public interface ArticleStorage {
 
     List<Article> getPage(long boundId, int page, int count);
 
+    Optional<Long> getMaxId();
+
     long getLastTimestampOfSource(String source);
 
     void setLastTimestampOfSource(String source, long timestamp);
