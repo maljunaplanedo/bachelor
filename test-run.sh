@@ -10,3 +10,6 @@ curl -b <(echo "$cookie") -H 'Content-Type: application/json' -d '{"habr.com":{"
 
 curl -b <(echo "$cookie") -H 'Content-Type: application/json' -d '{"rate":60,"maxArticlesPerSource":3,"keywords":["субд", "бд", "база данных", "базы данных", "базе данных", "базу данных", "базой данных", "баз данных", "базам данных", "базами данных", "базах данных", "db", "tarantool"]}' http://localhost:8082/admin/collector-config/collector
 
+echo "LAUNCHED SUCCESSFULLY! Page available at http://localhost:8079"
+echo "Open it and in 1-2 mins, after first news collecting is finished, you'll see them"
+
