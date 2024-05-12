@@ -22,6 +22,10 @@ module.exports = {
                     MiniCssExtractPlugin.loader,
                     'css-loader'
                 ]
+            },
+            {
+                test: /\.ttf$/,
+                type: 'asset/resource'
             }
         ],
     },

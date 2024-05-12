@@ -9,16 +9,24 @@ interface Article {
     timestamp: number,
 }
 
+interface ArticleAndInfo {
+    article: Article,
+    isShown: boolean,
+}
+
 const NO_BOUND_ID = -1
+const UPDATE_INTERVAL = 5000
+const PAGE_ARTICLES_COUNT = 2
+const API_URL = process.env.DBHUB_API_URL
 
 interface Top {
-    articles: Article[],
+    articles: ArticleAndInfo[],
     loadingNow: boolean,
     boundId: number,
 }
 
 interface Pages {
-    articles: Article[],
+    articles: ArticleAndInfo[],
     nextPage: number,
     loadingNow: boolean,
     boundId: number,
@@ -30,8 +38,6 @@ interface ArticlesAndBoundId {
 }
 
 export default function Feed() {
-    const PAGE_ARTICLES_COUNT = 2;
-
     const [top, setTop] = useState<Top>({
         articles: [],
         loadingNow: false,
@@ -59,7 +65,7 @@ export default function Feed() {
             loadingNow: true,
         })
 
-        let url = process.env.DBHUB_API_URL + '/articles/after?';
+        let url = API_URL + '/articles/after?';
         url += 'boundId=' + (top.boundId == NO_BOUND_ID ? pages.boundId : top.boundId);
 
         fetch(url)
@@ -78,7 +84,7 @@ export default function Feed() {
                     loadingNow: false,
                 }
                 for (let idx = newArticles.length - 1; idx >= 0; --idx) {
-                    newTop.articles.push(newArticles[idx])
+                    newTop.articles.push({article: newArticles[idx], isShown: false})
                 }
                 setTop(newTop)
             })
@@ -92,7 +98,7 @@ export default function Feed() {
 
     const loadTopRef = useRef<() => void>(null);
     useEffect(() => {loadTopRef.current = loadTop}, [top, pages]);
-    useEffect(() => {setInterval(() => loadTopRef.current(), 5000)}, []);
+    useEffect(() => {setInterval(() => loadTopRef.current(), UPDATE_INTERVAL)}, []);
 
     const loadNextPage = () => {
         if (pages.loadingNow) {
@@ -103,7 +109,7 @@ export default function Feed() {
             loadingNow: true
         })
 
-        let url = process.env.DBHUB_API_URL + '/articles/page?'
+        let url = API_URL + '/articles/page?'
         url += 'count=' + PAGE_ARTICLES_COUNT
         url += '&page=' + pages.nextPage
         url += '&boundId=' + pages.boundId
@@ -124,7 +130,7 @@ export default function Feed() {
                     loadingNow: false,
                     boundId: newBoundId,
                 }
-                newArticles.forEach(article => newPages.articles.push(article))
+                newArticles.forEach(article => newPages.articles.push({article, isShown: false}))
                 setPages(newPages)
             })
             .catch(() => {
@@ -137,25 +143,50 @@ export default function Feed() {
 
     useEffect(loadNextPage, [])
 
-    let topArticlesReversed: Article[] = []
+    let topArticlesReversed: ArticleAndInfo[] = []
     for (let idx = top.articles.length - 1; idx >= 0; --idx) {
         topArticlesReversed.push(top.articles[idx])
     }
 
-    const showArticles = (articles: Article[], addToKey: number) => {
+    const toggleArticle = (idx: number, isTop: boolean) => {
+        const doToggle = (idx: number, articles: ArticleAndInfo[]) => {
+            let result = [...articles];
+            result[idx].isShown = !result[idx].isShown;
+            return result;
+        }
+
+        if (isTop) {
+            setTop({...top, articles: doToggle(top.articles.length - idx, top.articles)})
+        } else {
+            setPages({...pages, articles: doToggle(idx, pages.articles)})
+        }
+    };
+
+    const showArticles = (articles: ArticleAndInfo[], isTop: boolean) => {
         return articles.map(
             (article, idx) =>
-                <li key={idx + addToKey}>
-                    <a href={article.link} target="_blank" rel="noopener noreferrer">{article.title}</a>
+                <li key={idx + (isTop ? 0 : top.articles.length)} className={"article " + (article.isShown ? "shownarticle" : "")}>
+                    <div className="articletitle" onClick={() => toggleArticle(idx, isTop)}>
+                        <div className="articletitledate">{new Date(article.article.timestamp * 1000).toLocaleString("ru-RU")}</div>
+                        <div className="articletitletitle">
+                            <span>{article.article.source}: </span>{article.article.title}
+                        </div>
+                    </div>
+                    <div className="articletext">
+                        <p>{article.article.text}</p>
+                        <a href={article.article.link} target="_blank" rel="noopener noreferrer">
+                            <button>Открыть</button>
+                        </a>
+                    </div>
                 </li>
         );
     }
 
     return (
         <>
-            <ul>
-                { showArticles(topArticlesReversed, 0) }
-                { showArticles(pages.articles, topArticlesReversed.length) }
+            <ul className="articleslist">
+                { showArticles(topArticlesReversed, true) }
+                { showArticles(pages.articles, false) }
             </ul>
             <button onClick={loadNextPage}>Еще</button>
         </>

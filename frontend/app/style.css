@@ -1,0 +1,83 @@
+* {
+    font-family: "Montserrat", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    font-size: 20px;
+    color: grey;
+    text-decoration: none;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background-color: unset;
+    border: none;
+}
+
+body {
+    margin-left: 20%;
+    margin-right: 20%;
+    margin-top: 10rem;
+    margin-bottom: 10rem;
+}
+
+button {
+    border: 2px solid grey;
+    padding: .5rem;
+    margin-top: .5rem;
+    cursor: pointer;
+    font-weight: 600;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+}
+
+.articleslist {
+    border: 2px solid grey;
+}
+
+.article {
+    border-bottom: 2px solid grey;
+}
+
+.articletitle {
+    padding: 1rem;
+    padding-top: .5rem;
+    padding-bottom: .5rem;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.articletitletitle {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.articletitletitle > span {
+    font-weight: 400;
+}
+
+.articletitledate {
+    float: right;
+}
+
+.articletext {
+    padding: 1rem;
+    padding-top: 0;
+    padding-bottom: .5rem;
+    display: none;
+}
+
+.article:last-child {
+    border-bottom: none;
+}
+
+.shownarticle .articletitletitle {
+    white-space: unset;
+}
+
+.shownarticle .articletext {
+    display: block;
+}
