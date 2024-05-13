@@ -11,11 +11,13 @@
     padding: 0;
     background-color: unset;
     border: none;
+    line-height: 1.2;
 }
 
 body {
-    margin-left: 20%;
-    margin-right: 20%;
+    margin-left: auto;
+    margin-right: auto;
+    width: 1200px;
     margin-top: 10rem;
     margin-bottom: 10rem;
 }
@@ -29,14 +31,22 @@ button {
     user-select: none;
     -webkit-user-select: none;
     cursor: pointer;
+    transition: .1s;
+}
+
+button:hover {
+    color: white;
+    background-color: grey;
 }
 
 .articleslist {
     border: 2px solid grey;
+    transition: 2s;
 }
 
 .article {
     border-bottom: 2px solid grey;
+    overflow: hidden;
 }
 
 .articletitle {
@@ -64,10 +74,21 @@ button {
 }
 
 .articletext {
+    max-height: 0;
     padding: 1rem;
     padding-top: 0;
+    padding-bottom: 0;
+    transition: .1s;
+}
+
+.shownarticle .articletext {
+    max-height: 22rem;
     padding-bottom: .5rem;
-    display: none;
+}
+
+.articletext p {
+    max-height: 18rem;
+    overflow: hidden;
 }
 
 .article:last-child {
@@ -76,8 +97,5 @@ button {
 
 .shownarticle .articletitletitle {
     white-space: unset;
-}
-
-.shownarticle .articletext {
-    display: block;
+    overflow: visible;
 }
