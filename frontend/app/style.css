@@ -99,3 +99,25 @@ button:hover {
     white-space: unset;
     overflow: visible;
 }
+
+input[type=text], input[type=password] {
+    border: 2px solid grey;
+    padding: .5rem;
+    margin-top: .5rem;
+    display: block;
+    width: 100%;
+}
+
+.formerror {
+    color: red;
+}
+
+form {
+    margin-bottom: .5rem;
+}
+
+.formwrapper {
+    width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}

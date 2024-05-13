@@ -1,6 +1,7 @@
 package ru.dbhub;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Validator;
 import org.slf4j.Logger;
@@ -50,10 +51,10 @@ public class CollectorService {
     @Autowired
     private ArticleStorage articleStorage;
 
-    private <C> C parseConfig(String configString, Class<C> configClass) throws BadConfigFormatException {
+    private <C> C parseConfig(JsonNode configJson, Class<C> configClass) throws BadConfigFormatException {
         C result;
         try {
-            result = jsonMapper.readValue(configString, configClass);
+            result = jsonMapper.treeToValue(configJson, configClass);
         } catch (JsonProcessingException exception) {
             throw new BadConfigFormatException();
         }
@@ -65,7 +66,7 @@ public class CollectorService {
         return result;
     }
 
-    private CollectorConfig parseCollectorConfig(String config) throws BadConfigFormatException {
+    private CollectorConfig parseCollectorConfig(JsonNode config) throws BadConfigFormatException {
         return parseConfig(config, CollectorConfig.class);
     }
 
@@ -101,7 +102,7 @@ public class CollectorService {
     }
 
     @Transactional
-    public Optional<String> getCollectorConfig() {
+    public Optional<JsonNode> getCollectorConfig() {
         return configsStorage.getCollectorConfig();
     }
 
@@ -110,11 +111,11 @@ public class CollectorService {
         return configsStorage.getNewsSourceConfigs();
     }
 
-    private void doSetCollectorConfig(String config) {
+    private void doSetCollectorConfig(JsonNode config) {
         configsStorage.setCollectorConfig(config);
     }
 
-    private void setCollectorConfig(String config) {
+    private void setCollectorConfig(JsonNode config) {
         boolean collectorConfigWasAbsent = configsStorage.getCollectorConfig().isEmpty();
         doSetCollectorConfig(config);
         if (collectorConfigWasAbsent) {
@@ -130,7 +131,7 @@ public class CollectorService {
     }
 
     @Transactional
-    public void validateAndSetCollectorConfig(String config) throws BadConfigFormatException {
+    public void validateAndSetCollectorConfig(JsonNode config) throws BadConfigFormatException {
         parseCollectorConfig(config);
         setCollectorConfig(config);
     }
@@ -141,8 +142,13 @@ public class CollectorService {
 
     @Transactional
     public void validateAndSetNewsSourceConfigs(
-        Map<String, NewsSourceTypeAndConfig> sourceConfigs
+        Map<String, NewsSourceTypeAndConfig> sourceConfigs,
+        boolean removeOld
     ) throws BadConfigException {
+        if (removeOld) {
+            configsStorage.removeAllNewsSourceConfigs();
+        }
+
         for (var sourceNameToTypeAndConfig : sourceConfigs.entrySet()) {
             createNewsSource(sourceNameToTypeAndConfig.getValue());
             setNewsSourceConfig(sourceNameToTypeAndConfig.getKey(), sourceNameToTypeAndConfig.getValue());
@@ -224,7 +230,7 @@ public class CollectorService {
             try {
                 collector.collect(name, source);
             } catch (IOException exception) {
-                logger.error("IOException trying to collect news from source " + name, exception);
+                logger.error("IOException trying to collect news from source {}", name, exception);
             }
         });
 

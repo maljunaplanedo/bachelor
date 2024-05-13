@@ -1,5 +1,7 @@
 package ru.dbhub.mvc;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,12 +21,12 @@ public class ConfigController {
     private CollectorService collectorService;
 
     @GetMapping("/collector")
-    public String getCollectorConfig() {
-        return collectorService.getCollectorConfig().orElse("");
+    public JsonNode getCollectorConfig() {
+        return collectorService.getCollectorConfig().orElse(NullNode.getInstance());
     }
 
     @PostMapping("/collector")
-    public void setCollectorConfig(@RequestBody String config) {
+    public void setCollectorConfig(@RequestBody JsonNode config) {
         try {
             collectorService.validateAndSetCollectorConfig(config);
         } catch (BadConfigFormatException exception) {
@@ -37,10 +39,9 @@ public class ConfigController {
         return collectorService.getNewsSourceConfigs();
     }
 
-    @PostMapping("/sources")
-    public void setNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceTypeAndConfig> sourceConfigs) {
+    private void doSetNewsSourceConfigs(Map<String, NewsSourceTypeAndConfig> sourceConfigs, boolean removeOld) {
         try {
-            collectorService.validateAndSetNewsSourceConfigs(sourceConfigs);
+            collectorService.validateAndSetNewsSourceConfigs(sourceConfigs, removeOld);
         } catch (BadConfigFormatException exception) {
             throw new ResponseStatusException(BAD_REQUEST, CollectorConfigError.BAD_FORMAT.getDetail());
         } catch (BadConfigSourceTypeException exception) {
@@ -48,6 +49,18 @@ public class ConfigController {
         } catch (BadConfigException unreachable) {
             throw new RuntimeException(unreachable);
         }
+    }
+
+    @PostMapping("/sources")
+    public void setNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceTypeAndConfig> sourceConfigs) {
+        doSetNewsSourceConfigs(sourceConfigs, false);
+    }
+
+    @PutMapping("/sources")
+    public void resetNewsSourceConfigs(
+        @RequestBody @Valid Map<String, @NotNull NewsSourceTypeAndConfig> sourceConfigs
+    ) {
+        doSetNewsSourceConfigs(sourceConfigs, true);
     }
 
     @DeleteMapping("/sources")

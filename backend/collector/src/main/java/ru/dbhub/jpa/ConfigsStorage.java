@@ -1,5 +1,8 @@
 package ru.dbhub.jpa;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -87,15 +90,29 @@ class ConfigsStorageImpl implements ConfigsStorage {
     @Autowired
     private NewsSourceConfigRepository newsSourceConfigRepository;
 
+    @Autowired
+    private ObjectMapper jsonMapper;
+
     @Override
-    public Optional<String> getCollectorConfig() {
+    public Optional<JsonNode> getCollectorConfig() {
         return collectorConfigRepository.findById(CollectorConfigModel.FAKE_ID)
-            .map(CollectorConfigModel::getConfig);
+            .map(CollectorConfigModel::getConfig)
+            .map(config -> {
+                try {
+                    return jsonMapper.readTree(config);
+                } catch (JsonProcessingException exception) {
+                    throw new RuntimeException(exception);
+                }
+            });
     }
 
     @Override
-    public void setCollectorConfig(String collectorConfig) {
-        collectorConfigRepository.save(new CollectorConfigModel(collectorConfig));
+    public void setCollectorConfig(JsonNode collectorConfig) {
+        try {
+            collectorConfigRepository.save(new CollectorConfigModel(jsonMapper.writeValueAsString(collectorConfig)));
+        } catch (JsonProcessingException exception) {
+            throw new RuntimeException(exception);
+        }
     }
 
     @Override
@@ -103,21 +120,38 @@ class ConfigsStorageImpl implements ConfigsStorage {
         return newsSourceConfigRepository.findAll().stream()
             .collect(Collectors.toMap(
                 NewsSourceConfigModel::getSource,
-                newsSourceConfigModel -> new NewsSourceTypeAndConfig(
-                    newsSourceConfigModel.getType(), newsSourceConfigModel.getConfig()
-                )
+                newsSourceConfigModel -> {
+                    try {
+                        return new NewsSourceTypeAndConfig(
+                            newsSourceConfigModel.getType(), jsonMapper.readTree(newsSourceConfigModel.getConfig())
+                        );
+                    } catch (JsonProcessingException exception) {
+                        throw new RuntimeException(exception);
+                    }
+                }
             ));
     }
 
     @Override
     public void setNewsSourceConfig(String source, NewsSourceTypeAndConfig typeAndConfig) {
-        newsSourceConfigRepository.save(
-            new NewsSourceConfigModel(source, typeAndConfig.type(), typeAndConfig.config())
-        );
+        try {
+            newsSourceConfigRepository.save(
+                new NewsSourceConfigModel(
+                    source, typeAndConfig.type(), jsonMapper.writeValueAsString(typeAndConfig.config())
+                )
+            );
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void removeNewsSourceConfig(String source) {
         newsSourceConfigRepository.deleteById(source);
+    }
+
+    @Override
+    public void removeAllNewsSourceConfigs() {
+        newsSourceConfigRepository.deleteAll();
     }
 }

@@ -1,5 +1,6 @@
 package ru.dbhub;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,19 +44,19 @@ public class CollectorConfigController {
     }
 
     @GetMapping("/collector")
-    public String getCollectorConfig() {
+    public JsonNode getCollectorConfig() {
         return requireNonNull(
             webClient
                 .get()
                 .uri("/collector")
                 .retrieve()
-                .bodyToMono(String.class)
+                .bodyToMono(JsonNode.class)
                 .block()
         );
     }
 
     @PostMapping("/collector")
-    public void setCollectorConfig(@RequestBody String config) {
+    public void setCollectorConfig(@RequestBody JsonNode config) {
         webClient
             .post()
             .uri("/collector")
@@ -81,6 +82,17 @@ public class CollectorConfigController {
     public void setNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceTypeAndConfig> sourceConfigs) {
         webClient
             .post()
+            .uri("/sources")
+            .bodyValue(sourceConfigs)
+            .retrieve()
+            .toBodilessEntity()
+            .block();
+    }
+
+    @PutMapping("/sources")
+    public void resetNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceTypeAndConfig> sourceConfigs) {
+        webClient
+            .put()
             .uri("/sources")
             .bodyValue(sourceConfigs)
             .retrieve()
