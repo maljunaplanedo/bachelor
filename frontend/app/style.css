@@ -110,10 +110,7 @@ input[type=text], input[type=password] {
 
 .formerror {
     color: red;
-}
-
-form {
-    margin-bottom: .5rem;
+    margin-top: .5rem;
 }
 
 .formwrapper {
