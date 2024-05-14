@@ -26,7 +26,7 @@ public class ConfigController {
     }
 
     @PostMapping("/collector")
-    public void setCollectorConfig(@RequestBody JsonNode config) {
+    public void setCollectorConfig(@RequestBody @NotNull JsonNode config) {
         try {
             collectorService.validateAndSetCollectorConfig(config);
         } catch (BadConfigFormatException exception) {

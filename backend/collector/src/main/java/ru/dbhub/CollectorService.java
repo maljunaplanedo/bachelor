@@ -59,7 +59,7 @@ public class CollectorService {
             throw new BadConfigFormatException();
         }
 
-        if (!validator.validate(result).isEmpty()) {
+        if (result == null || !validator.validate(result).isEmpty()) {
             throw new BadConfigFormatException();
         }
 

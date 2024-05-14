@@ -56,7 +56,7 @@ public class CollectorConfigController {
     }
 
     @PostMapping("/collector")
-    public void setCollectorConfig(@RequestBody JsonNode config) {
+    public void setCollectorConfig(@RequestBody @NotNull JsonNode config) {
         webClient
             .post()
             .uri("/collector")

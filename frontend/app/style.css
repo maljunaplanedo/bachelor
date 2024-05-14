@@ -12,14 +12,15 @@
     background-color: unset;
     border: none;
     line-height: 1.2;
+    outline: none;
 }
 
 body {
     margin-left: auto;
     margin-right: auto;
     width: 1200px;
-    margin-top: 10rem;
-    margin-bottom: 10rem;
+    margin-top: 4rem;
+    margin-bottom: 4rem;
 }
 
 button {
@@ -100,12 +101,17 @@ button:hover {
     overflow: visible;
 }
 
-input[type=text], input[type=password] {
+input[type=text], input[type=password], textarea {
     border: 2px solid grey;
     padding: .5rem;
     margin-top: .5rem;
     display: block;
     width: 100%;
+    resize: none;
+}
+
+textarea {
+    height: 300px;
 }
 
 .formerror {
@@ -117,4 +123,11 @@ input[type=text], input[type=password] {
     width: 500px;
     margin-left: auto;
     margin-right: auto;
+}
+
+.logoutbutton {
+    position: absolute;
+    top: 4rem;
+    left: 200px;
+    margin-top: 0;
 }

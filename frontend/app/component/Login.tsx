@@ -54,6 +54,7 @@ export default function Login() {
                 method: "POST",
                 body: JSON.stringify(state.usernameAndPassword),
                 headers: {'Content-Type': 'application/json;charset=utf-8'},
+                credentials: "include"
             }
         )
             .then(response => {
