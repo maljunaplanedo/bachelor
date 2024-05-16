@@ -35,11 +35,11 @@ public class ConfigController {
     }
 
     @GetMapping("/sources")
-    public Map<String, NewsSourceTypeAndConfig> getNewsSourceConfigs() {
+    public Map<String, NewsSourceConfig> getNewsSourceConfigs() {
         return collectorService.getNewsSourceConfigs();
     }
 
-    private void doSetNewsSourceConfigs(Map<String, NewsSourceTypeAndConfig> sourceConfigs, boolean removeOld) {
+    private void doSetNewsSourceConfigs(Map<String, NewsSourceConfig> sourceConfigs, boolean removeOld) {
         try {
             collectorService.validateAndSetNewsSourceConfigs(sourceConfigs, removeOld);
         } catch (BadConfigFormatException exception) {
@@ -52,13 +52,13 @@ public class ConfigController {
     }
 
     @PostMapping("/sources")
-    public void setNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceTypeAndConfig> sourceConfigs) {
+    public void setNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceConfig> sourceConfigs) {
         doSetNewsSourceConfigs(sourceConfigs, false);
     }
 
     @PutMapping("/sources")
     public void resetNewsSourceConfigs(
-        @RequestBody @Valid Map<String, @NotNull NewsSourceTypeAndConfig> sourceConfigs
+        @RequestBody @Valid Map<String, @NotNull NewsSourceConfig> sourceConfigs
     ) {
         doSetNewsSourceConfigs(sourceConfigs, true);
     }

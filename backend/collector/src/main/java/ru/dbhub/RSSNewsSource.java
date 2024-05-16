@@ -65,8 +65,8 @@ final class RSSNewsSource extends PageLimitedNewsSource {
     }
 
     @Override
-    public List<JustCollectedArticle> doGetArticlesPage(int pageNo) throws IOException {
-        return getEntries(pageNo).stream()
+    public List<JustCollectedArticle> nextArticlesPageImpl() throws IOException {
+        return getEntries(getPageNo()).stream()
             .map(this::entryToArticle)
             .toList();
     }

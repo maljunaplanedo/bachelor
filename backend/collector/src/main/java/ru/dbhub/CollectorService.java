@@ -70,12 +70,12 @@ public class CollectorService {
         return parseConfig(config, CollectorConfig.class);
     }
 
-    private NewsSource createNewsSource(NewsSourceTypeAndConfig typeAndConfig) throws BadConfigException {
+    private NewsSource createNewsSource(NewsSourceConfig sourceConfig) throws BadConfigException {
         Class<?> sourceClass;
         try {
             var packageName = getClass().getPackageName();
             sourceClass = Class.forName(
-                packageName + (packageName.isEmpty() ? "" : ".") + typeAndConfig.type() + "NewsSource"
+                packageName + (packageName.isEmpty() ? "" : ".") + sourceConfig.type() + "NewsSource"
             );
         } catch (ClassNotFoundException exception) {
             throw new BadConfigSourceTypeException();
@@ -92,7 +92,7 @@ public class CollectorService {
             throw new BadConfigSourceTypeException();
         }
 
-        var parsedConfig = parseConfig(typeAndConfig.config(), sourceConfigClass);
+        var parsedConfig = parseConfig(sourceConfig.config(), sourceConfigClass);
 
         try {
             return (NewsSource) sourceConstructorOfConfig.newInstance(parsedConfig);
@@ -107,7 +107,7 @@ public class CollectorService {
     }
 
     @Transactional
-    public Map<String, NewsSourceTypeAndConfig> getNewsSourceConfigs() {
+    public Map<String, NewsSourceConfig> getNewsSourceConfigs() {
         return configsStorage.getNewsSourceConfigs();
     }
 
@@ -136,22 +136,22 @@ public class CollectorService {
         setCollectorConfig(config);
     }
 
-    private void setNewsSourceConfig(String source, NewsSourceTypeAndConfig typeAndConfig) {
-        configsStorage.setNewsSourceConfig(source, typeAndConfig);
+    private void setNewsSourceConfig(String source, NewsSourceConfig sourceConfig) {
+        configsStorage.setNewsSourceConfig(source, sourceConfig);
     }
 
     @Transactional
     public void validateAndSetNewsSourceConfigs(
-        Map<String, NewsSourceTypeAndConfig> sourceConfigs,
+        Map<String, NewsSourceConfig> sourceConfigs,
         boolean removeOld
     ) throws BadConfigException {
         if (removeOld) {
             configsStorage.removeAllNewsSourceConfigs();
         }
 
-        for (var sourceNameToTypeAndConfig : sourceConfigs.entrySet()) {
-            createNewsSource(sourceNameToTypeAndConfig.getValue());
-            setNewsSourceConfig(sourceNameToTypeAndConfig.getKey(), sourceNameToTypeAndConfig.getValue());
+        for (var sourceNameToConfig : sourceConfigs.entrySet()) {
+            createNewsSource(sourceNameToConfig.getValue());
+            setNewsSourceConfig(sourceNameToConfig.getKey(), sourceNameToConfig.getValue());
         }
     }
 
@@ -219,16 +219,16 @@ public class CollectorService {
 
         var collector = new Collector(collectorConfig, articleStorage);
 
-        getNewsSourceConfigs().forEach((name, typeAndConfig) -> {
+        getNewsSourceConfigs().forEach((name, sourceConfig) -> {
             NewsSource source;
             try {
-                source = createNewsSource(typeAndConfig);
+                source = createNewsSource(sourceConfig);
             } catch (BadConfigException exception) {
                 throw new RuntimeException(exception);
             }
 
             try {
-                collector.collect(name, source);
+                collector.collect(name, source, sourceConfig.requiresFiltering());
             } catch (IOException exception) {
                 logger.error("IOException trying to collect news from source {}", name, exception);
             }

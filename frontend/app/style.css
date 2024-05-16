@@ -18,9 +18,9 @@
 body {
     margin-left: auto;
     margin-right: auto;
-    width: 1200px;
-    margin-top: 4rem;
-    margin-bottom: 4rem;
+    width: 1500px;
+    margin-top: 3rem;
+    margin-bottom: 2rem;
 }
 
 button {
@@ -112,6 +112,7 @@ input[type=text], input[type=password], textarea {
 
 textarea {
     height: 300px;
+    font-size: 16px;
 }
 
 .formerror {
@@ -119,10 +120,23 @@ textarea {
     margin-top: .5rem;
 }
 
+.formsuccess {
+    color: green;
+    margin-top: .5rem;
+}
+
 .formwrapper {
     width: 500px;
     margin-left: auto;
     margin-right: auto;
+}
+
+.formwrapper.wideformwrapper {
+    width: 800px;
+}
+
+.formwrapper.verywideformwrapper {
+    width: 1200px;
 }
 
 .logoutbutton {

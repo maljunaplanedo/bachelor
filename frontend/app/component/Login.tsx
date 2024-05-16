@@ -69,6 +69,9 @@ export default function Login() {
                 }
                 setState(newState)
             })
+            .catch(() => {
+                setState({...state, loading: false, error: "Ошибка"})
+            })
 
         return
     };

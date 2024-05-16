@@ -30,8 +30,10 @@ class ArticleModel {
 
     private String source;
 
+    @Column(columnDefinition = "TEXT")
     private String link;
 
+    @Column(columnDefinition = "TEXT")
     private String title;
 
     @Column(columnDefinition = "TEXT")

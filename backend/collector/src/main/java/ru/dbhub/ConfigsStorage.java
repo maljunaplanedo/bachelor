@@ -10,9 +10,9 @@ public interface ConfigsStorage {
 
     void setCollectorConfig(JsonNode collectorConfig);
 
-    Map<String, NewsSourceTypeAndConfig> getNewsSourceConfigs();
+    Map<String, NewsSourceConfig> getNewsSourceConfigs();
 
-    void setNewsSourceConfig(String source, NewsSourceTypeAndConfig typeAndConfig);
+    void setNewsSourceConfig(String source, NewsSourceConfig typeAndConfig);
 
     void removeNewsSourceConfig(String source);
 

@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 public class JacksonConfig {
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jacksonCustomizer() {
-        return mapperBuilder -> mapperBuilder
-            .featuresToEnable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES);
+        return mapperBuilder -> {};
     }
 }

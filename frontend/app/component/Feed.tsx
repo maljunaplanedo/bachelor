@@ -150,24 +150,24 @@ export default function Feed() {
 
     let articlesToShow: ArticleToShow[] = []
     for (let idx = 0; idx < pages.articles.length; ++idx) {
-        articlesToShow.push({article: pages.articles[idx].article,  isShown: pages.articles[idx].isShown, isTop: false, idx: idx})
+        articlesToShow.push({article: pages.articles[idx].article, isShown: pages.articles[idx].isShown, isTop: false, idx: idx})
     }
     for (let idx = 0; idx < top.articles.length; ++idx) {
-        articlesToShow.push({article: top.articles[idx].article,  isShown: top.articles[idx].isShown, isTop: false, idx: idx})
+        articlesToShow.push({article: top.articles[idx].article, isShown: top.articles[idx].isShown, isTop: true, idx: idx})
     }
     articlesToShow.sort((article1, article2) => article2.article.timestamp - article1.article.timestamp)
 
     const toggleArticle = (idx: number, isTop: boolean) => {
-        const doToggle = (idx: number, articles: ArticleAndInfo[]) => {
+        const doToggle = (articles: ArticleAndInfo[]) => {
             let result = [...articles];
             result[idx].isShown = !result[idx].isShown;
             return result;
         }
 
         if (isTop) {
-            setTop({...top, articles: doToggle(top.articles.length - idx - 1, top.articles)})
+            setTop({...top, articles: doToggle(top.articles)})
         } else {
-            setPages({...pages, articles: doToggle(idx, pages.articles)})
+            setPages({...pages, articles: doToggle(pages.articles)})
         }
     };
 
@@ -186,7 +186,7 @@ export default function Feed() {
     };
 
     return (
-        <>
+        <div className="formwrapper verywideformwrapper">
             <ul className="articleslist">
                 {
                     articlesToShow.map(
@@ -209,6 +209,6 @@ export default function Feed() {
                 }
             </ul>
             <button onClick={loadNextPage}>Еще</button>
-        </>
+        </div>
     )
 }

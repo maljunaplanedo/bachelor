@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 import ru.dbhub.ConfigsStorage;
-import ru.dbhub.NewsSourceTypeAndConfig;
+import ru.dbhub.NewsSourceConfig;
 
 import java.util.Map;
 import java.util.Optional;
@@ -56,13 +56,16 @@ class NewsSourceConfigModel {
     @Column(columnDefinition = "TEXT")
     private String config;
 
+    private boolean requiresFiltering;
+
     private NewsSourceConfigModel() {
     }
 
-    NewsSourceConfigModel(String source, String type, String config) {
+    NewsSourceConfigModel(String source, String type, String config, boolean requiresFiltering) {
         this.source = source;
         this.type = type;
         this.config = config;
+        this.requiresFiltering = requiresFiltering;
     }
 
     String getSource() {
@@ -75,6 +78,10 @@ class NewsSourceConfigModel {
 
     String getConfig() {
         return config;
+    }
+
+    boolean isRequiresFiltering() {
+        return requiresFiltering;
     }
 }
 
@@ -116,14 +123,16 @@ class ConfigsStorageImpl implements ConfigsStorage {
     }
 
     @Override
-    public Map<String, NewsSourceTypeAndConfig> getNewsSourceConfigs() {
+    public Map<String, NewsSourceConfig> getNewsSourceConfigs() {
         return newsSourceConfigRepository.findAll().stream()
             .collect(Collectors.toMap(
                 NewsSourceConfigModel::getSource,
                 newsSourceConfigModel -> {
                     try {
-                        return new NewsSourceTypeAndConfig(
-                            newsSourceConfigModel.getType(), jsonMapper.readTree(newsSourceConfigModel.getConfig())
+                        return new NewsSourceConfig(
+                            newsSourceConfigModel.getType(),
+                            jsonMapper.readTree(newsSourceConfigModel.getConfig()),
+                            newsSourceConfigModel.isRequiresFiltering()
                         );
                     } catch (JsonProcessingException exception) {
                         throw new RuntimeException(exception);
@@ -133,11 +142,14 @@ class ConfigsStorageImpl implements ConfigsStorage {
     }
 
     @Override
-    public void setNewsSourceConfig(String source, NewsSourceTypeAndConfig typeAndConfig) {
+    public void setNewsSourceConfig(String source, NewsSourceConfig sourceConfig) {
         try {
             newsSourceConfigRepository.save(
                 new NewsSourceConfigModel(
-                    source, typeAndConfig.type(), jsonMapper.writeValueAsString(typeAndConfig.config())
+                    source,
+                    sourceConfig.type(),
+                    jsonMapper.writeValueAsString(sourceConfig.config()),
+                    sourceConfig.requiresFiltering()
                 )
             );
         } catch (JsonProcessingException e) {

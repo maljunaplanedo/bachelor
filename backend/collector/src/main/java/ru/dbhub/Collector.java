@@ -23,33 +23,32 @@ class Collector {
         return textContainsKeyword(article.title()) || textContainsKeyword(article.text());
     }
 
-    void collect(String sourceName, NewsSource source) throws IOException {
-        List<JustCollectedArticle> articles = new ArrayList<>();
+    void collect(String sourceName, NewsSource source, boolean requiresFiltering) throws IOException {
         long oldLastTimestamp = storage.getLastTimestampOfSource(sourceName);
         long newLastTimestamp = 0;
 
-        for (int pageNo = 1;; ++pageNo) {
-            var articlesPage = source.getArticlesPage(pageNo);
+        List<JustCollectedArticle> articles = new ArrayList<>();
+
+        while (true) {
+            var articlesPage = source.nextArticlesPage();
             if (newLastTimestamp == 0 && !articlesPage.isEmpty()) {
                 newLastTimestamp = articlesPage.getFirst().timestamp();
             }
 
             articlesPage.stream()
                 .takeWhile(article -> article.timestamp() >= oldLastTimestamp)
-                .filter(this::shouldCollectByTopic)
+                .filter(article -> !requiresFiltering || shouldCollectByTopic(article))
                 .filter(article -> !storage.has(sourceName, article.link()))
-                .limit(config.maxArticlesPerSource() - articles.size())
                 .forEach(articles::add);
 
-            boolean shouldStopCollecting = articles.size() == config.maxArticlesPerSource()
-                || articlesPage.isEmpty()
+            boolean shouldStopCollecting = articlesPage.isEmpty()
                 || articlesPage.getLast().timestamp() < oldLastTimestamp;
             if (shouldStopCollecting) {
                 break;
             }
         }
 
-        storage.setLastTimestampOfSource(sourceName, newLastTimestamp);
         articles.forEach(article -> storage.addJustCollected(sourceName, article));
+        storage.setLastTimestampOfSource(sourceName, newLastTimestamp);
     }
 }

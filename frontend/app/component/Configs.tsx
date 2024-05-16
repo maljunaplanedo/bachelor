@@ -3,11 +3,16 @@ import { useHistory } from "react-router-dom";
 
 const API_URL = process.env.DBHUB_API_URL
 
+interface RequestResult {
+    value: string,
+    ok: boolean,
+}
+
 export default function Configs() {
     const [collector, setCollector] = useState<string>(null)
-    const [collectorError, setCollectorError] = useState<string>("")
+    const [collectorResult, setCollectorResult] = useState<RequestResult>({value: "", ok: true})
     const [sources, setSources] = useState<string>(null)
-    const [sourcesError, setSourcesError] = useState<string>("")
+    const [sourcesResult, setSourcesResult] = useState<RequestResult>({value: "", ok: true})
 
     const collectorField = useRef<HTMLTextAreaElement>(null)
     const sourcesField = useRef<HTMLTextAreaElement>(null)
@@ -27,10 +32,10 @@ export default function Configs() {
                     } else if (!response.ok) {
                         return Promise.reject()
                     }
-                    return response.text()
+                    return response.json()
                 })
-                .then(text => {
-                    setCollector(text)
+                .then(json => {
+                    setCollector(JSON.stringify(json, null, 2))
                 })
         },
         []
@@ -49,10 +54,10 @@ export default function Configs() {
                     } else if (!response.ok) {
                         return Promise.reject()
                     }
-                    return response.text()
+                    return response.json()
                 })
-                .then(text => {
-                    setSources(text)
+                .then(json => {
+                    setSources(JSON.stringify(json, null, 2))
                 })
         },
         []
@@ -88,12 +93,15 @@ export default function Configs() {
                 if (response.status == 401 || response.status == 403) {
                     history.push("/login")
                 } else if (response.status == 400) {
-                    setCollectorError("Неверный формат")
+                    setCollectorResult({value: "Неверный формат", ok: false})
                 } else if (!response.ok) {
-                    setCollectorError("Ошибка")
+                    setCollectorResult({value: "Ошибка", ok: false})
                 } else {
-                    setCollectorError("")
+                    setCollectorResult({value: "Сохранено успешно", ok: true})
                 }
+            })
+            .catch(() => {
+                setCollectorResult({value: "Ошибка", ok: false})
             })
     }
 
@@ -112,12 +120,15 @@ export default function Configs() {
                 if (response.status == 401 || response.status == 403) {
                     history.push("/login")
                 } else if (response.status == 400) {
-                    setSourcesError("Неверный формат")
+                    setSourcesResult({value: "Неверный формат", ok: false})
                 } else if (!response.ok) {
-                    setSourcesError("Ошибка")
+                    setSourcesResult({value: "Ошибка", ok: false})
                 } else {
-                    setSourcesError("")
+                    setSourcesResult({value: "Сохранено успешно", ok: true})
                 }
+            })
+            .catch(() => {
+                setSourcesResult({value: "Ошибка", ok: false})
             })
     }
 
@@ -131,24 +142,26 @@ export default function Configs() {
 
     return (
         <>
-            <div className="formwrapper">
+            <div className="formwrapper wideformwrapper">
                 {sources != null &&
                     <form name="sources" onSubmit={resetSources}>
+                        <div>Настройки источников новостей</div>
                         <textarea ref={sourcesField} onInput={onSourcesInput} defaultValue={sources}></textarea>
                         <button type="submit">Сохранить</button>
                     </form>
                 }
-                <div className="formerror">{sourcesError}</div>
+                <div className={sourcesResult.ok ? "formsuccess" : "formerror"}>{sourcesResult.value}</div>
             </div>
             <br />
-            <div className="formwrapper">
+            <div className="formwrapper wideformwrapper">
                 {collector != null &&
                     <form name="collector" onSubmit={resetCollector}>
+                        <div>Общие настройки сбора новостей</div>
                         <textarea ref={collectorField} onInput={onCollectorInput} defaultValue={collector}></textarea>
                         <button type="submit">Сохранить</button>
                     </form>
                 }
-                <div className="formerror">{collectorError}</div>
+                <div className={collectorResult.ok ? "formsuccess" : "formerror"}>{collectorResult.value}</div>
             </div>
             <br />
             <button className="logoutbutton" onClick={logout}>Выйти</button>

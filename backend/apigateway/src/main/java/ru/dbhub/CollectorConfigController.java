@@ -67,19 +67,19 @@ public class CollectorConfigController {
     }
 
     @GetMapping("/sources")
-    public Map<String, NewsSourceTypeAndConfig> getNewsSourceConfigs() {
+    public Map<String, NewsSourceConfig> getNewsSourceConfigs() {
         return requireNonNull(
             webClient
                 .get()
                 .uri("/sources")
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, NewsSourceTypeAndConfig>>() {})
+                .bodyToMono(new ParameterizedTypeReference<Map<String, NewsSourceConfig>>() {})
                 .block()
         );
     }
 
     @PostMapping("/sources")
-    public void setNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceTypeAndConfig> sourceConfigs) {
+    public void setNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceConfig> sourceConfigs) {
         webClient
             .post()
             .uri("/sources")
@@ -90,7 +90,7 @@ public class CollectorConfigController {
     }
 
     @PutMapping("/sources")
-    public void resetNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceTypeAndConfig> sourceConfigs) {
+    public void resetNewsSourceConfigs(@RequestBody @Valid Map<String, @NotNull NewsSourceConfig> sourceConfigs) {
         webClient
             .put()
             .uri("/sources")

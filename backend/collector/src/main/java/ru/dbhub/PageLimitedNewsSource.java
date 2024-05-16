@@ -6,17 +6,25 @@ import java.util.List;
 public abstract class PageLimitedNewsSource implements NewsSource {
     private final int maxPage;
 
+    private int page = 1;
+
     PageLimitedNewsSource(int maxPage) {
         this.maxPage = maxPage;
     }
 
     @Override
-    public final List<JustCollectedArticle> getArticlesPage(int pageNo) throws IOException {
-        if (pageNo > maxPage) {
+    public List<JustCollectedArticle> nextArticlesPage() throws IOException {
+        if (page > maxPage) {
             return List.of();
         }
-        return doGetArticlesPage(pageNo);
+        var result = nextArticlesPageImpl();
+        ++page;
+        return result;
     }
 
-    protected abstract List<JustCollectedArticle> doGetArticlesPage(int pageNo) throws IOException;
+    protected int getPageNo() {
+        return page;
+    }
+
+    protected abstract List<JustCollectedArticle> nextArticlesPageImpl() throws IOException;
 }
