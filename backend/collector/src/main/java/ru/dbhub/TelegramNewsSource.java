@@ -21,7 +21,7 @@ public class TelegramNewsSource extends HTMLNewsSource {
             null,
             true,
             false,
-            Integer.MAX_VALUE,
+            null,
             false,
             "link[rel=\"prev\"]",
             null,

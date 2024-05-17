@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ArticleStorage {
-    List<Article> getAfter(long boundId);
+    List<Article> getAfter(long boundId, int limit);
 
     List<Article> getPage(long boundId, int page, int count);
 

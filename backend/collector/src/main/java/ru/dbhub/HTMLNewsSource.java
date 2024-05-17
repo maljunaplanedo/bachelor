@@ -31,7 +31,7 @@ class HTMLNewsSource extends PageLimitedNewsSource {
         @Nullable String timeZone,
         boolean usesTimeTag,
         boolean containsRussianMonthNameGen,
-        @NotNull Integer maxPage,
+        @Nullable Integer maxPage,
         boolean useLinkForItemInfo,
         @Nullable String nextPageLinkSelector,
         @Nullable String byDatePagingFormat,

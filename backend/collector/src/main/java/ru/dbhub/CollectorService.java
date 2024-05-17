@@ -165,10 +165,11 @@ public class CollectorService {
     }
 
     @Transactional
-    public ArticlesAndBoundId getArticlesAfter(long boundId) {
+    public ArticlesAndBoundId getArticlesAfter(long boundId, int limit) {
+        var articles = articleStorage.getAfter(boundId == NO_BOUND_ARTICLE_ID ? ARTICLE_ID_BEFORE_ALL : boundId, limit);
         return new ArticlesAndBoundId(
-            articleStorage.getAfter(boundId == NO_BOUND_ARTICLE_ID ? ARTICLE_ID_BEFORE_ALL : boundId),
-            getCurrentBoundArticleId()
+            articles,
+            articles.isEmpty() ? getCurrentBoundArticleId() : articles.getLast().id()
         );
     }
 

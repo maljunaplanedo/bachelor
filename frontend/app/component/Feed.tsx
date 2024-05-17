@@ -23,7 +23,8 @@ interface ArticleToShow {
 
 const NO_BOUND_ID = -1
 const UPDATE_INTERVAL = 5000
-const PAGE_ARTICLES_COUNT = 2
+const PAGE_ARTICLES_COUNT = 10
+const MAX_ARTICLES_IN_UPDATE_REQUEST = 20
 const API_URL = process.env.DBHUB_API_URL
 
 interface Top {
@@ -72,8 +73,9 @@ export default function Feed() {
             loadingNow: true,
         })
 
-        let url = API_URL + '/articles/after?';
-        url += 'boundId=' + (top.boundId == NO_BOUND_ID ? pages.boundId : top.boundId);
+        let url = API_URL + '/articles/after?'
+        url += 'boundId=' + (top.boundId == NO_BOUND_ID ? pages.boundId : top.boundId)
+        url += '&limit=' + MAX_ARTICLES_IN_UPDATE_REQUEST
 
         fetch(url)
             .then(response => {

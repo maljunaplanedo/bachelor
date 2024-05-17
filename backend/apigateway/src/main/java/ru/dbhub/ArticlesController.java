@@ -27,7 +27,7 @@ public class ArticlesController {
     private String collectorUrl;
 
     @GetMapping("/after")
-    public ArticlesAndBoundId getArticlesAfter(@RequestParam long boundId) {
+    public ArticlesAndBoundId getArticlesAfter(@RequestParam long boundId, @RequestParam int limit) {
         return Objects.requireNonNull(
             webClient
                 .get()
@@ -35,6 +35,7 @@ public class ArticlesController {
                     uriBuilder -> uriBuilder
                         .path("/after")
                         .queryParam("boundId", boundId)
+                        .queryParam("limit", limit)
                         .build()
                 )
                 .retrieve()

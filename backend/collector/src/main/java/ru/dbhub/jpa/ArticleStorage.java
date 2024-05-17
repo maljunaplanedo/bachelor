@@ -2,6 +2,7 @@ package ru.dbhub.jpa;
 
 import jakarta.persistence.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Limit;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -65,7 +66,7 @@ class ArticleModel {
 
 @Repository
 interface ArticleRepository extends JpaRepository<ArticleModel, Long> {
-    List<ArticleModel> findByIdGreaterThanOrderByTimestampDesc(long id);
+    List<ArticleModel> findByIdGreaterThanOrderByIdAsc(long id, Limit limit);
 
     List<ArticleModel> findByIdLessThanEqualOrderByTimestampDesc(long id, Pageable pageable);
 
@@ -108,8 +109,8 @@ class ArticleStorageImpl implements ArticleStorage {
     private LastTimestampOfSourceRepository lastTimestampOfSourceRepository;
 
     @Override
-    public List<Article> getAfter(long boundId) {
-        return articleRepository.findByIdGreaterThanOrderByTimestampDesc(boundId).stream()
+    public List<Article> getAfter(long boundId, int count) {
+        return articleRepository.findByIdGreaterThanOrderByIdAsc(boundId, Limit.of(count)).stream()
             .map(ArticleModel::toArticle)
             .toList();
     }

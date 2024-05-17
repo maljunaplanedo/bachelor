@@ -19,8 +19,8 @@ public class ArticlesController {
     private CollectorService collectorService;
 
     @GetMapping("/after")
-    public ArticlesAndBoundId getArticlesAfter(@RequestParam long boundId) {
-        return collectorService.getArticlesAfter(boundId);
+    public ArticlesAndBoundId getArticlesAfter(@RequestParam long boundId, @RequestParam int limit) {
+        return collectorService.getArticlesAfter(boundId, limit);
     }
 
     @GetMapping("/page")
