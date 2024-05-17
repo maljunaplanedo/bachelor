@@ -14,7 +14,7 @@ public interface ArticleStorage {
 
     void setLastTimestampOfSource(String source, long timestamp);
 
-    boolean has(String source, String link);
+    boolean has(String link);
 
     void addJustCollected(String source, JustCollectedArticle justCollectedArticle);
 }

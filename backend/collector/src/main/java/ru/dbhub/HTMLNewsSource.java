@@ -17,6 +17,8 @@ import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Objects.requireNonNull;
+
 class HTMLNewsSource extends PageLimitedNewsSource {
     public record Config(
         @NotNull String urlWithPageVar,
@@ -31,16 +33,18 @@ class HTMLNewsSource extends PageLimitedNewsSource {
         boolean containsRussianMonthNameGen,
         @NotNull Integer maxPage,
         boolean useLinkForItemInfo,
-        @Nullable String nextPageLinkSelector
+        @Nullable String nextPageLinkSelector,
+        @Nullable String byDatePagingFormat,
+        int attemptsToFindNonEmptyPage
     ) {
     }
 
-    public class BadArticleFormatException extends IOException {
-        public BadArticleFormatException(String message) {
+    public class ArticleIOException extends IOException {
+        public ArticleIOException(String message) {
             super(makeFullErrorMessage(message));
         }
 
-        public BadArticleFormatException(String message, Throwable cause) {
+        public ArticleIOException(String message, Throwable cause) {
             super(makeFullErrorMessage(message), cause);
         }
     }
@@ -53,9 +57,14 @@ class HTMLNewsSource extends PageLimitedNewsSource {
 
     private Integer articleIdx;
 
+    private LocalDate dateForByDatePaging;
+
     public HTMLNewsSource(Config config) {
         super(config.maxPage());
         this.config = config;
+        this.dateForByDatePaging = config.byDatePagingFormat() == null
+            ? null
+            : LocalDate.now(ZoneId.of(requireNonNull(config.timeZone())));
     }
 
     private String makeFullErrorMessage(String message) {
@@ -66,30 +75,32 @@ class HTMLNewsSource extends PageLimitedNewsSource {
         return fullMessageBuilder.toString();
     }
 
-    private <T> T throwBadFormatIfNull(@Nullable T value, String itemName) throws BadArticleFormatException {
+    private <T> T throwBadFormatIfNull(@Nullable T value, String itemName) throws ArticleIOException {
         if (value == null) {
-            throw new BadArticleFormatException(itemName + " is absent");
+            throw new ArticleIOException(itemName + " is absent");
         }
         return value;
     }
 
-    private String extractLink(Element articleHtml) throws BadArticleFormatException {
+    private String extractLink(Element articleHtml) throws ArticleIOException {
         var linkElement = throwBadFormatIfNull(articleHtml.selectFirst(config.linkSelector()), "Link");
         if (!linkElement.tag().equals(Tag.valueOf("a"))) {
-            throw new BadArticleFormatException("Link does not have tag \"a\", page " + pageUrl + ",");
+            throw new ArticleIOException("Link does not have tag \"a\"");
         }
         return linkElement.absUrl("href");
     }
 
-    private long extractTimestamp(Element articleHtml) throws BadArticleFormatException {
+    private static DateTimeFormatter makeDateTimeFormatter(String timeFormat) {
+        if ("<ISO>".equals(timeFormat)) {
+            return DateTimeFormatter.ISO_DATE_TIME;
+        }
+        return DateTimeFormatter.ofPattern(timeFormat);
+    }
+
+    private long extractTimestamp(Element articleHtml) throws ArticleIOException {
         var timeElement = throwBadFormatIfNull(articleHtml.selectFirst(config.timeSelector()), "Time");
         try {
-            DateTimeFormatter dateTimeFormatter;
-            if ("<ISO>".equals(config.timeFormat())) {
-                dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME;
-            } else {
-                dateTimeFormatter = DateTimeFormatter.ofPattern(config.timeFormat());
-            }
+            var dateTimeFormatter = makeDateTimeFormatter(config.timeFormat());
 
             String dateTimeStr;
             if (config.usesTimeTag()) {
@@ -132,42 +143,62 @@ class HTMLNewsSource extends PageLimitedNewsSource {
 
             return instant.getEpochSecond();
         } catch (DateTimeException exception) {
-            throw new BadArticleFormatException("Time has wrong format", exception);
+            throw new ArticleIOException("Time has wrong format", exception);
         }
     }
 
-    private String extractText(Element articleHtml) throws BadArticleFormatException {
+    private String extractText(Element articleHtml) throws ArticleIOException {
         return throwBadFormatIfNull(articleHtml.selectFirst(config.textSelector()), "Text").text();
     }
 
-    private String extractTitle(Element articleHtml) throws BadArticleFormatException {
+    private String extractTitle(Element articleHtml) throws ArticleIOException {
         if (config.titleSelector() != null) {
             return throwBadFormatIfNull(articleHtml.selectFirst(config.titleSelector()), "Title").text();
         }
-        return extractText(articleHtml).split("[.!?]")[0];
+        return extractText(articleHtml).split("[.!?\\n]| https://")[0];
     }
 
     private void computePageUrlIfNeeded() {
         if (pageUrl == null) {
-            pageUrl = new UriTemplate(config.urlWithPageVar()).expand(getPageNo()).toString();
+            if (config.nextPageLinkSelector() != null && getPageNo() > 1) {
+                return;
+            }
+
+            String pageForUrl;
+            if (dateForByDatePaging == null) {
+                pageForUrl = String.valueOf(getPageNo());
+            } else {
+                pageForUrl = makeDateTimeFormatter(requireNonNull(config.byDatePagingFormat()))
+                    .format(dateForByDatePaging);
+            }
+
+            pageUrl = new UriTemplate(config.urlWithPageVar()).expand(pageForUrl).toString();
         }
     }
 
-    private @Nullable String extractNextPageUrlIfNeeded(Element articlesListHtml) throws BadArticleFormatException {
+    private @Nullable String extractNextPageUrlIfNeeded(Element articlesListHtml) throws ArticleIOException {
         if (config.nextPageLinkSelector() != null) {
-            return throwBadFormatIfNull(
-                articlesListHtml.selectFirst(config.nextPageLinkSelector()),
-                "Next page url"
-            ).absUrl("href");
+            var nextPageLink = articlesListHtml.selectFirst(config.nextPageLinkSelector());
+            return nextPageLink == null ? null : nextPageLink.absUrl("href");
         }
         return null;
     }
 
-    @Override
-    public List<JustCollectedArticle> nextArticlesPageImpl() throws IOException {
-        computePageUrlIfNeeded();
+    private Element loadPageHtml(String url) throws ArticleIOException {
+        try {
+            return Jsoup.connect(url).get();
+        } catch (IOException ioException) {
+            throw new ArticleIOException("Failed to load page", ioException);
+        }
+    }
 
-        var articlesListHtml = Jsoup.connect(pageUrl).get();
+    public List<JustCollectedArticle> doNextArticlesPage() throws IOException {
+        computePageUrlIfNeeded();
+        if (pageUrl == null) {
+            return List.of();
+        }
+
+        var articlesListHtml = loadPageHtml(pageUrl);
 
         List<JustCollectedArticle> articles = new ArrayList<>();
         var articleHtmls = articlesListHtml.select(config.itemSelector());
@@ -179,7 +210,7 @@ class HTMLNewsSource extends PageLimitedNewsSource {
 
                 var link = extractLink(articleHtml);
                 if (config.useLinkForItemInfo()) {
-                    articleHtml = Jsoup.connect(link).get();
+                    articleHtml = loadPageHtml(link);
                 }
 
                 articles.add(new JustCollectedArticle(
@@ -188,18 +219,33 @@ class HTMLNewsSource extends PageLimitedNewsSource {
                     extractText(articleHtml),
                     extractTimestamp(articleHtml)
                 ));
-            } catch (BadArticleFormatException badArticleFormatException) {
-                logger.error("Bad article format:", badArticleFormatException);
+            } catch (ArticleIOException articleIOException) {
+                logger.error("Article parsing failed:", articleIOException);
                 ++exceptionsCount;
                 if (2 * exceptionsCount >= articleHtmls.size()) {
-                    throw badArticleFormatException;
+                    throw articleIOException;
                 }
             }
         }
         articleIdx = null;
 
+        if (dateForByDatePaging != null) {
+            dateForByDatePaging = dateForByDatePaging.plusDays(-1);
+        }
+
         pageUrl = extractNextPageUrlIfNeeded(articlesListHtml);
 
         return articles;
+    }
+
+    @Override
+    public List<JustCollectedArticle> nextArticlesPageImpl() throws IOException {
+        for (int attempt = 0; attempt < config.attemptsToFindNonEmptyPage() + 1; ++attempt) {
+            var result = doNextArticlesPage();
+            if (!result.isEmpty()) {
+                return result;
+            }
+        }
+        return List.of();
     }
 }

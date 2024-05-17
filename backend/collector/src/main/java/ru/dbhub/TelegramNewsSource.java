@@ -5,8 +5,7 @@ import org.springframework.web.util.UriTemplate;
 
 public class TelegramNewsSource extends HTMLNewsSource {
     public record Config(
-        @NotNull String channelName,
-        @NotNull Integer maxPage
+        @NotNull String channelName
     ) {
     }
 
@@ -22,9 +21,11 @@ public class TelegramNewsSource extends HTMLNewsSource {
             null,
             true,
             false,
-            config.maxPage(),
+            Integer.MAX_VALUE,
             false,
-            "link[rel=\"prev\"]"
+            "link[rel=\"prev\"]",
+            null,
+            0
         ));
     }
 }

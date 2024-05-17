@@ -38,7 +38,7 @@ class Collector {
             articlesPage.stream()
                 .takeWhile(article -> article.timestamp() >= oldLastTimestamp)
                 .filter(article -> !requiresFiltering || shouldCollectByTopic(article))
-                .filter(article -> !storage.has(sourceName, article.link()))
+                .filter(article -> !storage.has(article.link()))
                 .forEach(articles::add);
 
             boolean shouldStopCollecting = articlesPage.isEmpty()

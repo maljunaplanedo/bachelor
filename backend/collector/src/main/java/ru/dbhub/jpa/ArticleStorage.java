@@ -20,7 +20,7 @@ import java.util.Optional;
     indexes = {
         @Index(columnList = "timestamp"),
         @Index(columnList = "id,timestamp"),
-        @Index(columnList = "source,link")
+        @Index(columnList = "link")
     }
 )
 class ArticleModel {
@@ -71,7 +71,7 @@ interface ArticleRepository extends JpaRepository<ArticleModel, Long> {
 
     Optional<ArticleModel> findTopByOrderByIdDesc();
 
-    boolean existsBySourceAndLink(String source, String link);
+    boolean existsByLink(String link);
 }
 
 @Entity
@@ -143,8 +143,8 @@ class ArticleStorageImpl implements ArticleStorage {
     }
 
     @Override
-    public boolean has(String source, String link) {
-        return articleRepository.existsBySourceAndLink(source, link);
+    public boolean has(String link) {
+        return articleRepository.existsByLink(link);
     }
 
     @Override
