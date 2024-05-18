@@ -32,10 +32,13 @@ class HTMLNewsSource extends PageLimitedNewsSource {
         boolean usesTimeTag,
         boolean containsRussianMonthNameGen,
         @Nullable Integer maxPage,
-        boolean useLinkForItemInfo,
+        boolean useLinkForTitle,
+        boolean useLinkForText,
+        boolean useLinkForTime,
         @Nullable String nextPageLinkSelector,
         @Nullable String byDatePagingFormat,
-        int attemptsToFindNonEmptyPage
+        int attemptsToFindNonEmptyPage,
+        boolean removeTimeFromTitleAndText
     ) {
     }
 
@@ -97,35 +100,38 @@ class HTMLNewsSource extends PageLimitedNewsSource {
         return DateTimeFormatter.ofPattern(timeFormat);
     }
 
-    private long extractTimestamp(Element articleHtml) throws ArticleIOException {
+    private String extractRawTime(Element articleHtml) throws ArticleIOException {
         var timeElement = throwBadFormatIfNull(articleHtml.selectFirst(config.timeSelector()), "Time");
+        if (config.usesTimeTag()) {
+            return timeElement.attr("datetime");
+        }
+        return timeElement.text();
+    }
+
+    private long extractTimestamp(Element articleHtml) throws ArticleIOException {
         try {
             var dateTimeFormatter = makeDateTimeFormatter(config.timeFormat());
 
-            String dateTimeStr;
-            if (config.usesTimeTag()) {
-                dateTimeStr = timeElement.attr("datetime");
-            } else {
-                dateTimeStr = timeElement.text();
-            }
+            var rawTime = extractRawTime(articleHtml);
 
             if (config.containsRussianMonthNameGen()) {
-                dateTimeStr = dateTimeStr
-                    .replace("Января", "01")
-                    .replace("Февраля", "02")
-                    .replace("Марта", "03")
-                    .replace("Апреля", "04")
-                    .replace("Мая", "05")
-                    .replace("Июня", "06")
-                    .replace("Июля", "07")
-                    .replace("Августа", "08")
-                    .replace("Сентября", "09")
-                    .replace("Октября", "10")
-                    .replace("Ноября", "11")
-                    .replace("Декабря", "12");
+                rawTime = rawTime
+                    .toLowerCase()
+                    .replace("января", "01")
+                    .replace("февраля", "02")
+                    .replace("марта", "03")
+                    .replace("апреля", "04")
+                    .replace("мая", "05")
+                    .replace("июня", "06")
+                    .replace("июля", "07")
+                    .replace("августа", "08")
+                    .replace("сентября", "09")
+                    .replace("октября", "10")
+                    .replace("ноября", "11")
+                    .replace("декабря", "12");
             }
 
-            var temporalAccessor = dateTimeFormatter.parse(dateTimeStr, new ParsePosition(0));
+            var temporalAccessor = dateTimeFormatter.parse(rawTime, new ParsePosition(0));
 
             Instant instant;
             if (config.timeZone() == null) {
@@ -147,15 +153,25 @@ class HTMLNewsSource extends PageLimitedNewsSource {
         }
     }
 
+    private String removeTimeFromTitleOrTextIfNeeded(Element articleHtml, String text) throws ArticleIOException {
+        return config.removeTimeFromTitleAndText() ? text.replace(extractRawTime(articleHtml), "") : text;
+    }
+
     private String extractText(Element articleHtml) throws ArticleIOException {
-        return throwBadFormatIfNull(articleHtml.selectFirst(config.textSelector()), "Text").text();
+        return removeTimeFromTitleOrTextIfNeeded(
+            articleHtml,
+            throwBadFormatIfNull(articleHtml.selectFirst(config.textSelector()), "Text").text()
+        ).strip();
     }
 
     private String extractTitle(Element articleHtml) throws ArticleIOException {
+        String title;
         if (config.titleSelector() != null) {
-            return throwBadFormatIfNull(articleHtml.selectFirst(config.titleSelector()), "Title").text();
+            title = throwBadFormatIfNull(articleHtml.selectFirst(config.titleSelector()), "Title").text();
+        } else {
+            title = extractText(articleHtml).split("[.!?\\n]| https://")[0];
         }
-        return extractText(articleHtml).split("[.!?\\n]| https://")[0];
+        return removeTimeFromTitleOrTextIfNeeded(articleHtml, title).strip();
     }
 
     private void computePageUrlIfNeeded() {
@@ -209,15 +225,17 @@ class HTMLNewsSource extends PageLimitedNewsSource {
                 var articleHtml = articleHtmls.get(articleIdx);
 
                 var link = extractLink(articleHtml);
-                if (config.useLinkForItemInfo()) {
-                    articleHtml = loadPageHtml(link);
+
+                Element articleHtmlFromLink = null;
+                if (config.useLinkForTitle() || config.useLinkForText() || config.useLinkForTime()) {
+                    articleHtmlFromLink = loadPageHtml(link);
                 }
 
                 articles.add(new JustCollectedArticle(
                     link,
-                    extractTitle(articleHtml),
-                    extractText(articleHtml),
-                    extractTimestamp(articleHtml)
+                    config.useLinkForTitle() ? extractTitle(articleHtmlFromLink) : extractTitle(articleHtml),
+                    config.useLinkForText() ? extractText(articleHtmlFromLink) : extractText(articleHtml),
+                    config.useLinkForTime() ? extractTimestamp(articleHtmlFromLink) : extractTimestamp(articleHtml)
                 ));
             } catch (ArticleIOException articleIOException) {
                 logger.error("Article parsing failed:", articleIOException);
