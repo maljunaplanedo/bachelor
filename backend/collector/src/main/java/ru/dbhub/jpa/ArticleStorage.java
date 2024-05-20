@@ -31,7 +31,7 @@ class ArticleModel {
 
     private String source;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", unique = true)
     private String link;
 
     @Column(columnDefinition = "TEXT")

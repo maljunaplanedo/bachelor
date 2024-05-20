@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbhub-collector
+spec:
+  selector:
+    app: dbhub-collector
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbhub-apigateway
+spec:
+  selector:
+    app: dbhub-apigateway
+  ports:
+    - protocol: TCP
+      port: $DBHUB_API_PORT
+      targetPort: 80
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbhub-frontend
+spec:
+  selector:
+    app: dbhub-frontend
+  ports:
+    - protocol: TCP
+      port: $DBHUB_FRONTEND_PORT
+      targetPort: 80
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbhub-collector
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dbhub-collector
+  template:
+    metadata:
+      labels:
+        app: dbhub-collector
+    spec:
+      containers:
+        - name: dbhub-collector
+          image: $DBHUB_IMAGE_REGISTRY/dbhub-collector:$DBHUB_VERSION
+          env:
+            - name: DBHUB_PORT
+              value: "80"
+            - name: DBHUB_DATABASE_URL
+              value: "$DBHUB_DATABASE_URL"
+            - name: DBHUB_DATABASE_USERNAME
+              value: "$DBHUB_DATABASE_USERNAME"
+            - name: DBHUB_DATABASE_PASSWORD
+              value: "$DBHUB_DATABASE_PASSWORD"
+          ports:
+            - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbhub-apigateway
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dbhub-apigateway
+  template:
+    metadata:
+      labels:
+        app: dbhub-apigateway
+    spec:
+      containers:
+        - name: dbhub-apigateway
+          image: $DBHUB_IMAGE_REGISTRY/dbhub-apigateway:$DBHUB_VERSION
+          env:
+            - name: DBHUB_PORT
+              value: "80"
+            - name: DBHUB_COLLECTOR_URL
+              value: "http://dbhub-collector.default.svc.cluster.local"
+            - name: DBHUB_FRONTEND_URL
+              value: "$DBHUB_FRONTEND_HOST:$DBHUB_FRONTEND_PORT"
+            - name: DBHUB_ADMIN_USERNAME
+              value: "$DBHUB_ADMIN_USERNAME"
+            - name: DBHUB_ADMIN_PASSWORD
+              value: "$DBHUB_ADMIN_PASSWORD"
+            - name: DBHUB_DATABASE_URL
+              value: "$DBHUB_DATABASE_URL"
+            - name: DBHUB_DATABASE_USERNAME
+              value: "$DBHUB_DATABASE_USERNAME"
+            - name: DBHUB_DATABASE_PASSWORD
+              value: "$DBHUB_DATABASE_PASSWORD"
+          ports:
+            - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dbhub-frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dbhub-frontend
+  template:
+    metadata:
+      labels:
+        app: dbhub-frontend
+    spec:
+      containers:
+        - name: dbhub-frontend
+          image: $DBHUB_IMAGE_REGISTRY/dbhub-frontend:$DBHUB_VERSION
+          ports:
+            - containerPort: 80

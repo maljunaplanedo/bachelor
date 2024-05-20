@@ -31,6 +31,8 @@ public class CollectorService {
 
     private static final long ARTICLE_ID_AFTER_ALL = Long.MAX_VALUE;
 
+    private static final long RETRY_FIND_CONFIGS_RATE = 60;
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
@@ -50,6 +52,9 @@ public class CollectorService {
 
     @Autowired
     private ArticleStorage articleStorage;
+
+    @Autowired
+    private CollectSynchronizer collectSynchronizer;
 
     private <C> C parseConfig(JsonNode configJson, Class<C> configClass) throws BadConfigFormatException {
         C result;
@@ -111,23 +116,8 @@ public class CollectorService {
         return configsStorage.getNewsSourceConfigs();
     }
 
-    private void doSetCollectorConfig(JsonNode config) {
-        configsStorage.setCollectorConfig(config);
-    }
-
     private void setCollectorConfig(JsonNode config) {
-        boolean collectorConfigWasAbsent = configsStorage.getCollectorConfig().isEmpty();
-        doSetCollectorConfig(config);
-        if (collectorConfigWasAbsent) {
-            TransactionSynchronizationManager.registerSynchronization(
-                new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        collectAsync();
-                    }
-                }
-            );
-        }
+        configsStorage.setCollectorConfig(config);
     }
 
     @Transactional
@@ -204,10 +194,9 @@ public class CollectorService {
     public void collect() {
         var collectorConfigStringOptional = getCollectorConfig();
         if (collectorConfigStringOptional.isEmpty()) {
+            scheduleCollect(RETRY_FIND_CONFIGS_RATE);
             return;
         }
-
-        logger.info("Starting to collect news");
 
         CollectorConfig collectorConfig;
         try {
@@ -217,6 +206,13 @@ public class CollectorService {
         }
 
         scheduleCollect(collectorConfig.rate());
+
+        if (!collectSynchronizer.shouldCollect()) {
+            logger.info("Not collecting news because the synchronizer decided so");
+            return;
+        }
+
+        logger.info("Starting to collect news");
 
         var collector = new Collector(collectorConfig, articleStorage);
 
