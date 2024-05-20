@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbhub-collector
+spec:
+  selector:
+    app: dbhub-collector
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbhub-apigateway
+spec:
+  selector:
+    app: dbhub-apigateway
+  ports:
+    - protocol: TCP
+      port: $DBHUB_API_PORT
+      targetPort: 80
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dbhub-frontend
+spec:
+  selector:
+    app: dbhub-frontend
+  ports:
+    - protocol: TCP
+      port: $DBHUB_FRONTEND_PORT
+      targetPort: 80
+  type: LoadBalancer
