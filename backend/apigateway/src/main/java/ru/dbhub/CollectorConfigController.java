@@ -26,14 +26,14 @@ import static java.util.Objects.requireNonNull;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @RestController
-@RequestMapping("/admin/collector-config")
+@RequestMapping("/api/admin/collector-config")
 public class CollectorConfigController {
     private final WebClient webClient;
 
     @Autowired
     private ErrorControllerAdvice errorControllerAdvice;
 
-    CollectorConfigController(@Value("${ru.dbhub.collector-url}") String collectorUrl) {
+    public CollectorConfigController(@Value("${ru.dbhub.collector-url}") String collectorUrl) {
         this.webClient = WebClient.builder()
             .baseUrl(
                 UriComponentsBuilder.fromUriString(collectorUrl)

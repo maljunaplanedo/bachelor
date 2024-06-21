@@ -73,7 +73,7 @@ export default function Feed() {
             loadingNow: true,
         })
 
-        let url = API_URL + '/articles/after?'
+        let url = API_URL + '/api/articles/after?'
         url += 'boundId=' + (top.boundId == NO_BOUND_ID ? pages.boundId : top.boundId)
         url += '&limit=' + MAX_ARTICLES_IN_UPDATE_REQUEST
 
@@ -116,7 +116,7 @@ export default function Feed() {
             loadingNow: true
         })
 
-        let url = API_URL + '/articles/page?'
+        let url = API_URL + '/api/articles/page?'
         url += 'count=' + PAGE_ARTICLES_COUNT
         url += '&page=' + pages.nextPage
         url += '&boundId=' + pages.boundId

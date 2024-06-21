@@ -4,25 +4,23 @@
 # $DBHUB_DATABASE_URL
 # $DBHUB_DATABASE_USERNAME
 # $DBHUB_DATABASE_PASSWORD
-# $DBHUB_FRONTEND_HOST
-# $DBHUB_FRONTEND_PORT
 # $DBHUB_ADMIN_USERNAME
 # $DBHUB_ADMIN_PASSWORD
 # $DBHUB_API_SCHEMA
 # $DBHUB_API_HOST
 # $DBHUB_API_PORT
+# $DBHUB_TG_BOT_TOKEN
+# $DBHUB_TG_CHANNEL
 
 export DBHUB_VERSION=$(date +%s)
-export DBHUB_FRONTEND_URL=$DBHUB_FRONTEND_HOST
-
-if [ $DBHUB_FRONTEND_PORT != 80 ]
-then
-    export DBHUB_FRONTEND_URL=$DBHUB_FRONTEND_HOST:$DBHUB_FRONTEND_PORT
-fi
 
 docker build -t dbhub-collector:$DBHUB_VERSION -f backend/collector/Dockerfile backend
 docker tag dbhub-collector:$DBHUB_VERSION $DBHUB_IMAGE_REGISTRY/dbhub-collector:$DBHUB_VERSION
 docker push $DBHUB_IMAGE_REGISTRY/dbhub-collector:$DBHUB_VERSION
+
+docker build -t dbhub-publisher:$DBHUB_VERSION -f backend/publisher/Dockerfile backend
+docker tag dbhub-publisher:$DBHUB_VERSION $DBHUB_IMAGE_REGISTRY/dbhub-publisher:$DBHUB_VERSION
+docker push $DBHUB_IMAGE_REGISTRY/dbhub-publisher:$DBHUB_VERSION
 
 docker build -t dbhub-apigateway:$DBHUB_VERSION -f backend/apigateway/Dockerfile backend
 docker tag dbhub-apigateway:$DBHUB_VERSION $DBHUB_IMAGE_REGISTRY/dbhub-apigateway:$DBHUB_VERSION

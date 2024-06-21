@@ -30,6 +30,41 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: dbhub-publisher
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dbhub-publisher
+  template:
+    metadata:
+      labels:
+        app: dbhub-publisher
+    spec:
+      containers:
+        - name: dbhub-publisher
+          image: $DBHUB_IMAGE_REGISTRY/dbhub-publisher:$DBHUB_VERSION
+          env:
+            - name: DBHUB_PORT
+              value: "80"
+            - name: DBHUB_DATABASE_URL
+              value: "$DBHUB_DATABASE_URL"
+            - name: DBHUB_DATABASE_USERNAME
+              value: "$DBHUB_DATABASE_USERNAME"
+            - name: DBHUB_DATABASE_PASSWORD
+              value: "$DBHUB_DATABASE_PASSWORD"
+            - name: DBHUB_COLLECTOR_URL
+              value: "http://dbhub-collector.default.svc.cluster.local"
+            - name: DBHUB_TG_BOT_TOKEN
+              value: "$DBHUB_TG_BOT_TOKEN"
+            - name: DBHUB_TG_CHANNEL
+              value: "$DBHUB_TG_CHANNEL"
+          ports:
+            - containerPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: dbhub-apigateway
 spec:
   replicas: 3
@@ -50,7 +85,9 @@ spec:
             - name: DBHUB_COLLECTOR_URL
               value: "http://dbhub-collector.default.svc.cluster.local"
             - name: DBHUB_FRONTEND_URL
-              value: "$DBHUB_FRONTEND_URL"
+              value: "http://dbhub-frontend.default.svc.cluster.local"
+            - name: DBHUB_PUBLISHER_URL
+              value: "http://dbhub-publisher.default.svc.cluster.local"
             - name: DBHUB_ADMIN_USERNAME
               value: "$DBHUB_ADMIN_USERNAME"
             - name: DBHUB_ADMIN_PASSWORD
@@ -61,8 +98,6 @@ spec:
               value: "$DBHUB_DATABASE_USERNAME"
             - name: DBHUB_DATABASE_PASSWORD
               value: "$DBHUB_DATABASE_PASSWORD"
-            - name: DBHUB_API_HOST
-              value: "$DBHUB_API_HOST"
           ports:
             - containerPort: 80
 ---

@@ -123,7 +123,7 @@ public class SecurityConfig {
             .csrf(CsrfConfigurer::disable)
             .authorizeHttpRequests(
                 httpRequests -> httpRequests
-                    .requestMatchers("/admin/**").hasRole(ADMIN_ROLE)
+                    .requestMatchers("/api/admin/**").hasRole(ADMIN_ROLE)
                     .anyRequest().permitAll()
             )
             .exceptionHandling(
@@ -133,7 +133,7 @@ public class SecurityConfig {
             )
             .with(new RestUsernamePasswordAuthenticationFilterConfigurer<>(),
                 login -> login
-                    .loginProcessingUrl("/login")
+                    .loginProcessingUrl("/api/login")
                     .successHandler((req, res, auth) -> res.setStatus(OK.value()))
                     .failureHandler(
                         (req, res, ex) -> {
@@ -147,7 +147,7 @@ public class SecurityConfig {
             )
             .logout(
                 logout -> logout
-                    .logoutUrl("/logout")
+                    .logoutUrl("/api/logout")
                     .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler())
             )
             .build();

@@ -47,7 +47,7 @@ export default function Login() {
             loading: true,
         })
 
-        let url = API_URL + '/login'
+        let url = API_URL + '/api/login'
         fetch(
             url,
             {

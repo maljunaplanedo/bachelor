@@ -13,10 +13,11 @@ services:
       - DBHUB_COLLECTOR_URL=http://collector:8081
       - DBHUB_ADMIN_USERNAME=admin
       - DBHUB_ADMIN_PASSWORD=admin
-      - DBHUB_FRONTEND_URL=http://localhost:8079
+      - DBHUB_FRONTEND_URL=http://frontend:80
       - DBHUB_DATABASE_URL=jdbc:postgresql://db:5432/postgres
       - DBHUB_DATABASE_USERNAME=postgres
       - DBHUB_DATABASE_PASSWORD=1234
+      - DBHUB_PUBLISHER_URL=http://publisher:8083
     depends_on:
       - collector
   collector:
@@ -31,6 +32,21 @@ services:
       - DBHUB_DATABASE_PASSWORD=1234
     depends_on:
       - db
+  publisher:
+    build:
+      context: backend
+      dockerfile: publisher/Dockerfile
+    restart: always
+    environment:
+      - DBHUB_PORT=8083
+      - DBHUB_DATABASE_URL=jdbc:postgresql://db:5432/postgres
+      - DBHUB_DATABASE_USERNAME=postgres
+      - DBHUB_DATABASE_PASSWORD=1234
+      - DBHUB_COLLECTOR_URL=http://collector:8081
+      - DBHUB_TG_BOT_TOKEN=7197618426:AAFdCxzzeolh58IdHCtUyveO5KehhV2R-Ps
+      - DBHUB_TG_CHANNEL=@dbhub_1
+    depends_on:
+      - collector
   frontend:
     build:
       context: frontend

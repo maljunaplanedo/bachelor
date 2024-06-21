@@ -1,6 +1,7 @@
 package ru.dbhub;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -15,6 +16,9 @@ class CollectSynchronizer {
 
     private static final long INITIAL_SLEEP = 60;
 
+    @Value("${ru.dbhub.collectsynchronizer.group}")
+    private String groupName;
+
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     @Autowired
@@ -25,7 +29,7 @@ class CollectSynchronizer {
     private String id;
 
     private void heartbeat() {
-        collectSynchronizerStorage.addRecord(order, id, Instant.now().toEpochMilli());
+        collectSynchronizerStorage.addRecord(groupName, order, id, Instant.now().toEpochMilli());
         scheduler.schedule(this::heartbeat, HEARTBEAT_RATE, TimeUnit.SECONDS);
     }
 
@@ -42,7 +46,7 @@ class CollectSynchronizer {
         }
 
         return collectSynchronizerStorage
-            .getIdOfLeastByOrderAndIdAfterTimestamp(Instant.now().toEpochMilli() - 2 * 1000 * HEARTBEAT_RATE)
+            .getIdOfLeastByOrderAndIdAfterTimestamp(groupName, Instant.now().toEpochMilli() - 2 * 1000 * HEARTBEAT_RATE)
             .orElseThrow()
             .equals(id);
     }
